@@ -1,0 +1,73 @@
+# FranchExpress ERP - Build Task Tracker
+
+- `[x]` Project Configuration & Metadata
+  - `[x]` Create package.json
+  - `[x]` Create tailwind.config.js
+  - `[x]` Create next.config.js
+  - `[x]` Create vercel.json
+  - `[x]` Create firestore.rules
+  - `[x]` Create firestore.indexes.json
+  - `[x]` Create .env.local.example
+  - `[x]` Create middleware.js
+- `[x]` Core Service Utilities
+  - `[x]` Create lib/firebase.js
+  - `[x]` Create lib/firebase-admin.js
+  - `[x]` Create lib/auth-context.jsx
+  - `[x]` Create lib/notifications.js
+  - `[x]` Create lib/export.js
+  - `[x]` Create lib/tracking.js
+  - `[x]` Create lib/utils.js
+- `[x]` Custom React Hooks
+  - `[x]` Create hooks/useConsignments.js
+  - `[x]` Create hooks/useAuth.js
+  - `[x]` Create hooks/useTracking.js
+  - `[x]` Create hooks/useToast.js
+- `[x]` Base UI Components
+  - `[x]` Create components/ui/Button.jsx
+  - `[x]` Create components/ui/Input.jsx
+  - `[x]` Create components/ui/Select.jsx
+  - `[x]` Create components/ui/Badge.jsx
+  - `[x]` Create components/ui/Card.jsx
+  - `[x]` Create components/ui/Modal.jsx
+  - `[x]` Create components/ui/Toast.jsx
+  - `[x]` Create components/ui/Spinner.jsx
+- `[x]` Layout Components
+  - `[x]` Create components/layout/Sidebar.jsx
+  - `[x]` Create components/layout/TopBar.jsx
+  - `[x]` Create components/layout/MobileDrawer.jsx
+- `[x]` Consignment & Dashboard Specific Components
+  - `[x]` Create components/dashboard/KPICard.jsx
+  - `[x]` Create components/dashboard/DashboardCharts.jsx
+  - `[x]` Create components/dashboard/TodayTable.jsx
+  - `[x]` Create components/dashboard/PendingTable.jsx
+  - `[x]` Create components/consignment/ConsignmentForm.jsx
+  - `[x]` Create components/consignment/ShipmentSection.jsx
+  - `[x]` Create components/consignment/PaymentSection.jsx
+  - `[x]` Create components/consignment/ConsignorSection.jsx
+  - `[x]` Create components/consignment/ConsigneeSection.jsx
+  - `[x]` Create components/consignment/DeliverySection.jsx
+  - `[x]` Create components/consignment/TrackingTimeline.jsx
+  - `[x]` Create components/consignment/CopyButton.jsx
+  - `[x]` Create components/delivery/DeliveryCard.jsx
+  - `[x]` Create components/reports/ReportsTable.jsx
+  - `[x]` Create components/reports/ReportsSummary.jsx
+  - `[x]` Create components/reports/ExportButtons.jsx
+- `[x]` Application Routes & Pages
+  - `[x]` Create app/layout.jsx
+  - `[x]` Create app/globals.css
+  - `[x]` Create app/page.jsx
+  - `[x]` Create app/login/page.jsx
+  - `[x]` Create app/dashboard/layout.jsx
+  - `[x]` Create app/dashboard/page.jsx
+  - `[x]` Create app/dashboard/consignments/new/page.jsx
+  - `[x]` Create app/dashboard/delivery/page.jsx
+  - `[x]` Create app/dashboard/reports/page.jsx
+- `[x]` API Routes
+  - `[x]` Create app/api/consignments/route.js
+  - `[x]` Create app/api/consignments/[id]/route.js
+  - `[x]` Create app/api/track/route.js
+  - `[x]` Create app/api/notify/route.js
+- `[x]` Helpers, Scripts, and Docs
+  - `[x]` Create scripts/seed.js
+  - `[x]` Create NOTIFICATIONS.md
+  - `[x]` Create README.md

@@ -1,0 +1,28 @@
+{
+  "name": "franchexpress-erp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "firebase": "^10.11.1",
+    "firebase-admin": "^12.1.0",
+    "framer-motion": "^11.2.10",
+    "lucide-react": "^0.383.0",
+    "recharts": "^2.12.7",
+    "papaparse": "^5.4.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.3",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.19"
+  }
+}
