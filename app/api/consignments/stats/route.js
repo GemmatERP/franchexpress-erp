@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+
+// Force dynamic so Next.js doesn't attempt static pre-rendering of this API route
+export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
 
 // ─── Module-level server cache (5-minute TTL) ──────────────────────────────
