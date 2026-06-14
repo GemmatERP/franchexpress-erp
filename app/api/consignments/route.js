@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth, admin } from '../../../lib/firebase-admin';
 import { formatSNO } from '../../../lib/utils';
+import { invalidateStatsCache } from './stats/route';
 
-// Helper to verify Firebase ID token
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
 async function authenticate(req) {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -10,53 +12,63 @@ async function authenticate(req) {
   }
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    return decodedToken;
-  } catch (error) {
+    return await adminAuth.verifyIdToken(token);
+  } catch {
     throw new Error('Unauthorized: Token verification failed');
   }
 }
 
-// Helper to check role permissions
 async function getUserRole(uid) {
   try {
     const userDoc = await adminDb.collection('users').doc(uid).get();
-    if (userDoc.exists) {
-      return userDoc.data().role || 'employee';
-    }
-    return 'employee'; // default fallback
-  } catch (err) {
+    return userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+  } catch {
     return 'employee';
   }
 }
 
+// ─── GET /api/consignments ────────────────────────────────────────────────────
+// Supports cursor-based pagination. Always defaults to last 30 days if no
+// date filter provided, preventing unbounded collection scans.
+
 export async function GET(req) {
   try {
-    const decodedToken = await authenticate(req);
-    const role = await getUserRole(decodedToken.uid);
+    await authenticate(req);
 
     const { searchParams } = new URL(req.url);
-    const fromDate = searchParams.get('fromDate');
-    const toDate = searchParams.get('toDate');
-    const courierPartner = searchParams.get('courierPartner');
-    const deliveryStatus = searchParams.get('deliveryStatus');
-    const paymentMode = searchParams.get('paymentMode');
+    const fromDate        = searchParams.get('fromDate');
+    const toDate          = searchParams.get('toDate');
+    const courierPartner  = searchParams.get('courierPartner');
+    const deliveryStatus  = searchParams.get('deliveryStatus');
+    const paymentMode     = searchParams.get('paymentMode');
+    const cursor          = searchParams.get('cursor');      // last doc ID from previous page
+    const limitRaw        = parseInt(searchParams.get('limit') || '50', 10);
+    const pageLimit       = Math.min(Math.max(limitRaw, 1), 200); // clamp 1–200
 
     let queryRef = adminDb.collection('consignments');
 
-    // Filter by dates if provided
-    if (fromDate) {
-      const startOfDay = new Date(fromDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      queryRef = queryRef.where('date', '>=', admin.firestore.Timestamp.fromDate(startOfDay));
-    }
-    if (toDate) {
-      const endOfDay = new Date(toDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      queryRef = queryRef.where('date', '<=', admin.firestore.Timestamp.fromDate(endOfDay));
+    // ── Date filters (REQUIRED for efficiency) ───────────────────────────
+    // If the caller provides no date range we default to the last 30 days.
+    // This prevents loading the entire collection on unfiltered queries.
+    if (!fromDate && !toDate) {
+      const defaultStart = new Date();
+      defaultStart.setDate(defaultStart.getDate() - 30);
+      defaultStart.setHours(0, 0, 0, 0);
+      queryRef = queryRef.where('date', '>=', admin.firestore.Timestamp.fromDate(defaultStart));
+    } else {
+      if (fromDate) {
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0);
+        queryRef = queryRef.where('date', '>=', admin.firestore.Timestamp.fromDate(start));
+      }
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        queryRef = queryRef.where('date', '<=', admin.firestore.Timestamp.fromDate(end));
+      }
     }
 
-    // Filter by single values
+    // ── Additional filters ────────────────────────────────────────────────
     if (courierPartner && courierPartner !== 'All') {
       queryRef = queryRef.where('courierPartner', '==', courierPartner);
     }
@@ -67,87 +79,100 @@ export async function GET(req) {
       queryRef = queryRef.where('paymentMode', '==', paymentMode);
     }
 
-    // Sort by booking date descending
-    const snapshot = await queryRef.orderBy('date', 'desc').get();
-    
-    const list = [];
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      
-      // Convert timestamps to string/iso for json output compatibility
-      if (data.date) data.date = data.date.toDate().toISOString();
-      if (data.paymentDate) data.paymentDate = data.paymentDate.toDate().toISOString();
-      if (data.deliveredDate) data.deliveredDate = data.deliveredDate.toDate().toISOString();
-      if (data.createdAt) data.createdAt = data.createdAt.toDate().toISOString();
+    // ── Sort + page limit (fetch one extra to detect hasMore) ────────────
+    queryRef = queryRef.orderBy('date', 'desc').limit(pageLimit + 1);
 
-      list.push({
-        id: doc.id,
-        ...data,
-      });
+    // ── Cursor-based pagination ───────────────────────────────────────────
+    if (cursor) {
+      const cursorDoc = await adminDb.collection('consignments').doc(cursor).get();
+      if (cursorDoc.exists) {
+        queryRef = queryRef.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot  = await queryRef.get();
+    const allDocs   = snapshot.docs;
+    const hasMore   = allDocs.length > pageLimit;
+    const pageDocs  = hasMore ? allDocs.slice(0, pageLimit) : allDocs;
+    const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;
+
+    const data = pageDocs.map((doc) => {
+      const d = doc.data();
+      if (d.date)          d.date          = d.date.toDate().toISOString();
+      if (d.paymentDate)   d.paymentDate   = d.paymentDate?.toDate?.()?.toISOString()   ?? d.paymentDate;
+      if (d.deliveredDate) d.deliveredDate = d.deliveredDate?.toDate?.()?.toISOString() ?? d.deliveredDate;
+      if (d.createdAt)     d.createdAt     = d.createdAt?.toDate?.()?.toISOString()     ?? d.createdAt;
+      return { id: doc.id, ...d };
     });
 
-    return NextResponse.json(list);
+    return NextResponse.json(
+      { data, nextCursor, hasMore, total: data.length },
+      { headers: { 'Cache-Control': 'private, max-age=60' } }
+    );
   } catch (err) {
     console.error('API GET Consignments Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: err.message.startsWith('Unauthorized') ? 401 : 500 });
+    return NextResponse.json(
+      { error: err.message },
+      { status: err.message.startsWith('Unauthorized') ? 401 : 500 }
+    );
   }
 }
+
+// ─── POST /api/consignments ───────────────────────────────────────────────────
 
 export async function POST(req) {
   try {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    // Only employees and admins are allowed to register consignments
     if (role !== 'admin' && role !== 'employee') {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
     const body = await req.json();
 
-    // Generate SNO with Firestore transactions to prevent races
+    // Generate SNO atomically
     const counterRef = adminDb.collection('counters').doc('consignments');
     let nextCount = 1;
 
-    await adminDb.runTransaction(async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
+    await adminDb.runTransaction(async (tx) => {
+      const counterDoc = await tx.get(counterRef);
       if (!counterDoc.exists) {
-        transaction.set(counterRef, { count: 1 });
+        tx.set(counterRef, { count: 1 });
       } else {
         nextCount = counterDoc.data().count + 1;
-        transaction.update(counterRef, { count: nextCount });
+        tx.update(counterRef, { count: nextCount });
       }
     });
 
-    const generatedSNO = formatSNO(nextCount);
-
-    // Format timestamps from strings
     const docData = {
       ...body,
-      sno: generatedSNO,
-      date: body.date ? admin.firestore.Timestamp.fromDate(new Date(body.date)) : admin.firestore.Timestamp.now(),
-      paymentDate: body.paymentDate ? admin.firestore.Timestamp.fromDate(new Date(body.paymentDate)) : null,
+      sno:           formatSNO(nextCount),
+      date:          body.date          ? admin.firestore.Timestamp.fromDate(new Date(body.date))          : admin.firestore.Timestamp.now(),
+      paymentDate:   body.paymentDate   ? admin.firestore.Timestamp.fromDate(new Date(body.paymentDate))   : null,
       deliveredDate: body.deliveredDate ? admin.firestore.Timestamp.fromDate(new Date(body.deliveredDate)) : null,
-      createdAt: admin.firestore.Timestamp.now(),
-      createdBy: decodedToken.uid,
+      createdAt:     admin.firestore.Timestamp.now(),
+      createdBy:     decodedToken.uid,
       createdByName: decodedToken.name || decodedToken.email,
     };
 
-    // Save consignment
     const docRef = await adminDb.collection('consignments').add(docData);
-    
-    // Format dates back for response
-    if (docData.date) docData.date = docData.date.toDate().toISOString();
-    if (docData.paymentDate) docData.paymentDate = docData.paymentDate.toDate().toISOString();
-    if (docData.deliveredDate) docData.deliveredDate = docData.deliveredDate.toDate().toISOString();
-    if (docData.createdAt) docData.createdAt = docData.createdAt.toDate().toISOString();
 
-    return NextResponse.json({
-      id: docRef.id,
-      ...docData,
-    });
+    // Invalidate dashboard stats cache so next load reflects new data
+    invalidateStatsCache();
+
+    // Serialize for response
+    if (docData.date)          docData.date          = docData.date.toDate().toISOString();
+    if (docData.paymentDate)   docData.paymentDate   = docData.paymentDate?.toDate?.()?.toISOString()   ?? null;
+    if (docData.deliveredDate) docData.deliveredDate = docData.deliveredDate?.toDate?.()?.toISOString() ?? null;
+    if (docData.createdAt)     docData.createdAt     = docData.createdAt.toDate().toISOString();
+
+    return NextResponse.json({ id: docRef.id, ...docData });
   } catch (err) {
     console.error('API POST Consignment Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: err.message.startsWith('Unauthorized') ? 401 : 500 });
+    return NextResponse.json(
+      { error: err.message },
+      { status: err.message.startsWith('Unauthorized') ? 401 : 500 }
+    );
   }
 }

@@ -23,27 +23,10 @@ export default function DeliveryViewPage() {
   const loadDeliveries = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchConsignments();
-      
-      // Filter consignments:
-      // Must be today's date
-      const today = new Date();
-      const filtered = data.filter((item) => {
-        let itemDate = null;
-        if (item.date) {
-          itemDate = item.date.toDate ? item.date.toDate() : new Date(item.date);
-        }
-        if (!itemDate) return false;
-        
-        const isTodayDate = 
-          itemDate.getDate() === today.getDate() &&
-          itemDate.getMonth() === today.getMonth() &&
-          itemDate.getFullYear() === today.getFullYear();
-
-        return isTodayDate;
-      });
-
-      setDeliveries(filtered);
+      // ✅ Pass today's date filter: only reads ~70 docs instead of the entire collection
+      const todayStr = new Date().toISOString().split('T')[0];
+      const data = await fetchConsignments({ fromDate: todayStr, toDate: todayStr });
+      setDeliveries(data);
     } catch (err) {
       toast('Failed to load today deliveries: ' + err.message, 'error');
     } finally {

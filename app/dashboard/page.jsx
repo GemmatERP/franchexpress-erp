@@ -25,7 +25,7 @@ import { formatCurrency, formatDate } from '../../lib/utils';
 export default function DashboardHome() {
   const router = useRouter();
   const { toast } = useToast();
-  const { fetchConsignments, loading } = useConsignments();
+  const { fetchDashboardStats, loading } = useConsignments();
   
   const [consignments, setConsignments] = useState([]);
   const [kpis, setKpis] = useState({
@@ -44,13 +44,23 @@ export default function DashboardHome() {
 
   const loadData = useCallback(async () => {
     try {
-      const data = await fetchConsignments();
-      setConsignments(data);
-      calculateMetrics(data);
+      // ✅ Uses /api/consignments/stats:
+      //    • count() for KPIs  = 2 reads total
+      //    • today docs only   = ~70 reads
+      //    • last-14-days only = ~1000 reads max
+      // vs old approach that scanned the ENTIRE collection.
+      const stats = await fetchDashboardStats();
+      if (!stats) return;
+
+      setConsignments(stats.todayItems || []);
+      setKpis(stats.kpis);
+      setVolumeChart(stats.volumeChart || []);
+      setStatusChart(stats.statusChart || []);
+      setRevenueChart(stats.revenueChart || []);
     } catch (err) {
       toast('Failed to load dashboard metrics: ' + err.message, 'error');
     }
-  }, [fetchConsignments, toast]);
+  }, [fetchDashboardStats, toast]);
 
   useEffect(() => {
     loadData();
@@ -172,7 +182,9 @@ export default function DashboardHome() {
     setIsDetailModalOpen(true);
   };
 
-  const todayItems = consignments.filter((item) => isToday(item.date));
+  // Today's items come pre-filtered from the stats API
+  const todayItems   = consignments;
+  // Pending items are shown via KPI count; table uses today's items filtered by status
   const pendingItems = consignments.filter((item) =>
     ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)
   );

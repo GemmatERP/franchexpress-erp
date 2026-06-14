@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
+import { invalidateStatsCache } from '../stats/route';
 
 // Auth helper
 async function authenticate(req) {
@@ -97,6 +98,7 @@ export async function PUT(req, { params }) {
     }
 
     await docRef.update(payload);
+    invalidateStatsCache(); // Bust dashboard stats cache
 
     // Fetch updated doc to return
     const updatedSnap = await docRef.get();
@@ -131,6 +133,7 @@ export async function DELETE(req, { params }) {
     }
 
     await docRef.delete();
+    invalidateStatsCache(); // Bust dashboard stats cache
     return NextResponse.json({ success: true, message: `Consignment ${id} deleted successfully` });
   } catch (err) {
     console.error('API DELETE Consignment [id] Error:', err.message);
