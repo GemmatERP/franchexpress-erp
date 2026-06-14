@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
-import { invalidateStatsCache } from '../stats/route';
+import { invalidateStatsCache } from '../../../../lib/stats-cache';
 
 // Auth helper
 async function authenticate(req) {

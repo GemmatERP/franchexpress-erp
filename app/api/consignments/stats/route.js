@@ -3,13 +3,7 @@ import { NextResponse } from 'next/server';
 // Force dynamic so Next.js doesn't attempt static pre-rendering of this API route
 export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
-
-// ─── Module-level server cache (5-minute TTL) ──────────────────────────────
-// This avoids re-computing expensive queries on every dashboard refresh.
-// Safe for stateless serverless deployments (worst case: one cold cache per instance).
-let _cache = null;
-let _cacheTs = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+import { getCachedStats, setCachedStats, invalidateStatsCache } from '../../../../lib/stats-cache';
 
 async function authenticate(req) {
   const authHeader = req.headers.get('authorization');
@@ -22,9 +16,9 @@ export async function GET(req) {
     await authenticate(req);
 
     // ── Return cached result if still fresh ───────────────────────────────
-    const now = Date.now();
-    if (_cache && now - _cacheTs < CACHE_TTL_MS) {
-      return NextResponse.json(_cache, { headers: { 'X-Cache': 'HIT' } });
+    const cached = getCachedStats();
+    if (cached) {
+      return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
     }
 
     // ── Build Timestamp boundaries ────────────────────────────────────────
@@ -158,8 +152,7 @@ export async function GET(req) {
     };
 
     // Cache and return
-    _cache   = result;
-    _cacheTs = now;
+    setCachedStats(result);
 
     return NextResponse.json(result, { headers: { 'X-Cache': 'MISS' } });
   } catch (err) {
@@ -169,10 +162,4 @@ export async function GET(req) {
       { status: err.message.startsWith('Unauthorized') ? 401 : 500 }
     );
   }
-}
-
-// Invalidate cache when a consignment is written (called by POST/PUT/DELETE routes)
-export function invalidateStatsCache() {
-  _cache   = null;
-  _cacheTs = 0;
 }
