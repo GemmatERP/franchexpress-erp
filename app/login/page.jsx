@@ -71,16 +71,16 @@ export default function LoginPage() {
       >
         <Card hoverEffect={false} className="border border-fe-muted/40 shadow-xl bg-white p-8 rounded-xl flex flex-col items-center">
           {/* Logo */}
-          <div className="h-14 w-14 rounded-full bg-fe-teal flex items-center justify-center text-white font-bold text-2xl font-heading shadow-md mb-3">
-            FE
-          </div>
-          
-          <h2 className="text-xl font-bold font-heading text-fe-dark">
-            FranchExpress <span className="text-fe-teal">ERP</span>
-          </h2>
+          <img 
+            src="/Logo-GM-FE.png" 
+            alt="FranchExpress Logo" 
+            className="h-24 w-auto object-contain mb-4 shrink-0" 
+          />
           <p className="text-xs text-fe-gray font-sans mt-1">
             Access your courier management workspace
           </p>
+
+
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="w-full mt-8 space-y-4">

@@ -113,7 +113,7 @@ async function importExcel() {
   console.log('All old consignments successfully cleared.');
 
   // 2. Load and parse Excel file
-  const filePath = path.join(__dirname, '..', '2026 Franch Express Tracker(1).xls');
+  const filePath = path.join(__dirname, '..', '2026 New Franch Express Tracker.xls');
   console.log('Reading Excel file:', filePath);
   
   const workbook = XLSX.readFile(filePath, { cellDates: true });

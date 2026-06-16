@@ -10,7 +10,11 @@ import {
   Truck, 
   FileBarChart, 
   LogOut,
-  X 
+  X,
+  RefreshCw,
+  Search,
+  Coins,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -81,6 +85,12 @@ export function MobileDrawer({ isOpen, onClose }) {
       roles: ['admin', 'employee'],
     },
     {
+      label: 'Consignments',
+      href: '/dashboard/consignments',
+      icon: Package,
+      roles: ['admin', 'employee'],
+    },
+    {
       label: 'New Consignment',
       href: '/dashboard/consignments/new',
       icon: PackagePlus,
@@ -97,6 +107,24 @@ export function MobileDrawer({ isOpen, onClose }) {
       href: '/dashboard/reports',
       icon: FileBarChart,
       roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Search Consignments',
+      href: '/dashboard/search',
+      icon: Search,
+      roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Revenue',
+      href: '/dashboard/revenue',
+      icon: Coins,
+      roles: ['admin'],
+    },
+    {
+      label: 'Sync Logs',
+      href: '/dashboard/sync',
+      icon: RefreshCw,
+      roles: ['admin'],
     },
   ];
 
@@ -126,19 +154,18 @@ export function MobileDrawer({ isOpen, onClose }) {
             aria-modal="true"
             className="relative bg-white w-[260px] h-full shadow-2xl flex flex-col z-10 border-r border-fe-muted/30"
           >
-            {/* Header */}
-            <div className="h-16 flex items-center justify-between px-5 border-b border-fe-muted/20">
-              <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-fe-teal flex items-center justify-center text-white font-bold text-sm font-heading">
-                  FE
-                </div>
-                <span className="font-heading font-bold text-fe-dark text-sm tracking-wide">
-                  FranchExpress <span className="text-fe-teal">ERP</span>
-                </span>
+            <div className="h-20 flex items-center justify-center px-5 border-b border-fe-muted/20 relative">
+              <Link href="/dashboard" onClick={onClose} className="flex items-center justify-center">
+                <img 
+                  src="/Logo-GM-FE.png" 
+                  alt="FranchExpress Logo" 
+                  className="h-12 w-auto object-contain shrink-0" 
+                />
               </Link>
+
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg text-fe-gray hover:text-fe-dark hover:bg-fe-bg focus:outline-none focus:ring-2 focus:ring-fe-teal"
+                className="absolute right-5 p-1 rounded-lg text-fe-gray hover:text-fe-dark hover:bg-fe-bg focus:outline-none focus:ring-2 focus:ring-fe-teal"
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />

@@ -4,15 +4,27 @@ import React from 'react';
 
 export function Spinner({ size = 'md', className = '' }) {
   const sizes = {
+    xs: 'h-3 w-3 stroke-[1.5]',
     sm: 'h-4 w-4 stroke-[2]',
     md: 'h-8 w-8 stroke-[2.5]',
     lg: 'h-12 w-12 stroke-[3]',
   };
 
+  const dimensions = {
+    xs: 12,
+    sm: 16,
+    md: 32,
+    lg: 48,
+  };
+
+  const dim = dimensions[size] || 32;
+
   return (
     <div className={`flex items-center justify-center ${className}`}>
       <svg
-        className={`animate-spin text-fe-teal ${sizes[size]}`}
+        className={`animate-spin text-fe-teal ${sizes[size] || 'h-8 w-8'}`}
+        width={dim}
+        height={dim}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -36,3 +48,4 @@ export function Spinner({ size = 'md', className = '' }) {
     </div>
   );
 }
+

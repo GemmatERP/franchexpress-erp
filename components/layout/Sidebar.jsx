@@ -8,7 +8,11 @@ import {
   PackagePlus, 
   Truck, 
   FileBarChart, 
-  LogOut 
+  LogOut,
+  RefreshCw,
+  Search,
+  Coins,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -24,6 +28,12 @@ export function Sidebar({ className = '' }) {
       label: 'Dashboard',
       href: '/dashboard',
       icon: LayoutDashboard,
+      roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Consignments',
+      href: '/dashboard/consignments',
+      icon: Package,
       roles: ['admin', 'employee'],
     },
     {
@@ -44,24 +54,43 @@ export function Sidebar({ className = '' }) {
       icon: FileBarChart,
       roles: ['admin', 'employee'],
     },
+    {
+      label: 'Search Consignments',
+      href: '/dashboard/search',
+      icon: Search,
+      roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Revenue',
+      href: '/dashboard/revenue',
+      icon: Coins,
+      roles: ['admin'],
+    },
+    {
+      label: 'Sync Logs',
+      href: '/dashboard/sync',
+      icon: RefreshCw,
+      roles: ['admin'],
+    },
   ];
+
 
   // Filter items by current user's role
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 
   return (
     <aside className={`w-[260px] bg-white border-r border-fe-muted/30 flex flex-col h-screen fixed left-0 top-0 z-30 ${className}`}>
-      {/* Logo Section */}
-      <div className="h-16 flex items-center px-6 border-b border-fe-muted/20">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-full bg-fe-teal flex items-center justify-center text-white font-bold text-base font-heading">
-            FE
-          </div>
-          <span className="font-heading font-bold text-fe-dark text-base tracking-wide">
-            FranchExpress <span className="text-fe-teal">ERP</span>
-          </span>
+      <div className="h-20 flex items-center justify-center px-4 border-b border-fe-muted/20">
+        <Link href="/dashboard" className="flex items-center justify-center w-full">
+          <img 
+            src="/Logo-GM-FE.png" 
+            alt="FranchExpress Logo" 
+            className="h-12 w-auto object-contain shrink-0" 
+          />
         </Link>
       </div>
+
+
 
       {/* Navigation List */}
       <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">

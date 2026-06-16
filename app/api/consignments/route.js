@@ -69,35 +69,11 @@ export async function GET(req) {
       }
     }
 
-    // ── Additional filters ────────────────────────────────────────────────
-    if (courierPartner && courierPartner !== 'All') {
-      queryRef = queryRef.where('courierPartner', '==', courierPartner);
-    }
-    if (deliveryStatus && deliveryStatus !== 'All') {
-      queryRef = queryRef.where('deliveryStatus', '==', deliveryStatus);
-    }
-    if (paymentMode && paymentMode !== 'All') {
-      queryRef = queryRef.where('paymentMode', '==', paymentMode);
-    }
+    // Sort by date descending (uses default single-field index)
+    queryRef = queryRef.orderBy('date', 'desc');
 
-    // ── Sort + page limit (fetch one extra to detect hasMore) ────────────
-    queryRef = queryRef.orderBy('date', 'desc').limit(pageLimit + 1);
-
-    // ── Cursor-based pagination ───────────────────────────────────────────
-    if (cursor) {
-      const cursorDoc = await adminDb.collection('consignments').doc(cursor).get();
-      if (cursorDoc.exists) {
-        queryRef = queryRef.startAfter(cursorDoc);
-      }
-    }
-
-    const snapshot  = await queryRef.get();
-    const allDocs   = snapshot.docs;
-    const hasMore   = allDocs.length > pageLimit;
-    const pageDocs  = hasMore ? allDocs.slice(0, pageLimit) : allDocs;
-    const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;
-
-    const data = pageDocs.map((doc) => {
+    const snapshot = await queryRef.get();
+    let documents = snapshot.docs.map((doc) => {
       const d = doc.data();
       if (d.date)          d.date          = d.date.toDate().toISOString();
       if (d.paymentDate)   d.paymentDate   = d.paymentDate?.toDate?.()?.toISOString()   ?? d.paymentDate;
@@ -106,8 +82,32 @@ export async function GET(req) {
       return { id: doc.id, ...d };
     });
 
+    // ── Additional filters in-memory (No indexes needed) ──────────────────
+    if (courierPartner && courierPartner !== 'All') {
+      documents = documents.filter((doc) => doc.courierPartner === courierPartner);
+    }
+    if (deliveryStatus && deliveryStatus !== 'All') {
+      documents = documents.filter((doc) => doc.deliveryStatus === deliveryStatus);
+    }
+    if (paymentMode && paymentMode !== 'All') {
+      documents = documents.filter((doc) => doc.paymentMode === paymentMode);
+    }
+
+    // ── Pagination in-memory ──────────────────────────────────────────────
+    let startIndex = 0;
+    if (cursor) {
+      const idx = documents.findIndex((doc) => doc.id === cursor);
+      if (idx !== -1) {
+        startIndex = idx + 1;
+      }
+    }
+
+    const pageDocs = documents.slice(startIndex, startIndex + pageLimit);
+    const hasMore = (startIndex + pageLimit) < documents.length;
+    const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;
+
     return NextResponse.json(
-      { data, nextCursor, hasMore, total: data.length },
+      { data: pageDocs, nextCursor, hasMore, total: documents.length },
       { headers: { 'Cache-Control': 'private, max-age=60' } }
     );
   } catch (err) {
@@ -118,6 +118,7 @@ export async function GET(req) {
     );
   }
 }
+
 
 // ─── POST /api/consignments ───────────────────────────────────────────────────
 

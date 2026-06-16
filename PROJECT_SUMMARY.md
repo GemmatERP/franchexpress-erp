@@ -49,16 +49,16 @@
 
 ### ✅ PHASE 3 — Real Data Import from Excel
 
-**Goal**: Import 2,882 live consignment records from the business's Excel tracker.
+**Goal**: Import 3,218 live consignment records from the business's updated Excel tracker.
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Parsed `2026 Franch Express Tracker(1).xls` (AWB Tracker sheet) | ✅ Done |
+| 1 | Parsed `2026 New Franch Express Tracker.xls` (AWB Tracker sheet) | ✅ Done |
 | 2 | Cleared previously imported data | ✅ Done |
 | 3 | Filtered rows — skipped any without valid AWB numbers | ✅ Done |
-| 4 | Auto-generated sequential SNOs: `FE-0001` → `FE-2882` | ✅ Done |
-| 5 | Batch-imported 2,882 consignment documents (500 docs/batch) | ✅ Done |
-| 6 | Updated Firestore `/counters/bookingCounter` document to `2882` | ✅ Done |
+| 4 | Auto-generated sequential SNOs: `FE-0001` → `FE-3218` | ✅ Done |
+| 5 | Batch-imported 3,218 consignment documents (500 docs/batch) | ✅ Done |
+| 6 | Updated Firestore `/counters/bookingCounter` document to `3218` | ✅ Done |
 
 ---
 
@@ -164,18 +164,94 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
-### ⏳ PHASE 10 — FranchExpress API Bulk Status Auto-Sync
+### ✅ PHASE 10 — FranchExpress API Scheduled Auto-Sync & Tracking Timeline
 
-**Goal**: Implement an auto-sync system to fetch live shipment updates from the FranchExpress tracking API and display a detailed tracking timeline in the ERP.
+**Goal**: Implement an automatic background sync system using Vercel Cron to fetch live shipment updates from the FranchExpress tracking API and display a detailed tracking timeline in the ERP.
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Analyze FranchExpress tracking API response fields & UI mapping | ✅ Done |
-| 2 | Design implementation plan for bulk status sync and tracking UI | ✅ Done |
-| 3 | Create admin sync API endpoint (`/api/consignments/sync`) | ⏳ Pending |
-| 4 | Create admin bulk sync dashboard page (`/dashboard/sync`) | ⏳ Pending |
-| 5 | Modify `lib/tracking.js` to parse live statuses | ⏳ Pending |
-| 6 | Update consignment list details to display rich tracking timeline | ⏳ Pending |
+| 1 | Analyzed FranchExpress tracking API response fields & UI mapping | ✅ Done |
+| 2 | Designed implementation plan for scheduled auto-sync | ✅ Done |
+| 3 | Configured Vercel Cron Job in `vercel.json` (runs at 2:00 AM UTC nightly) | ✅ Done |
+| 4 | Created secure admin sync API `/api/consignments/sync` (verifies `CRON_SECRET`) | ✅ Done |
+| 5 | Created sync logs API `/api/sync-logs` for listing execution history | ✅ Done |
+| 6 | Created revenue stats API `/api/consignments/revenue-stats` | ✅ Done |
+| 7 | Created consignment search API `/api/consignments/search` | ✅ Done |
+| 8 | Updated `lib/tracking.js` to parse and map live FranchExpress API status codes | ✅ Done |
+| 9 | Built `TrackingTimeline` component for rich delivery status history UI | ✅ Done |
+
+---
+
+### ✅ PHASE 11 — New Dashboard Module Pages
+
+**Goal**: Build full-featured module pages for Consignments, Revenue, Search, and Sync Logs.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Built `/dashboard/consignments` — paginated consignment list with filters | ✅ Done |
+| 2 | Built `/dashboard/consignments/[id]` — individual consignment detail & tracking timeline | ✅ Done |
+| 3 | Built `/dashboard/consignments/new` — new consignment booking form | ✅ Done |
+| 4 | Built `/dashboard/revenue` — revenue analytics page with charts | ✅ Done |
+| 5 | Built `/dashboard/search` — consignment search by AWB, SNO, phone, address | ✅ Done |
+| 6 | Built `/dashboard/sync` — admin-only sync logs and manual sync trigger | ✅ Done |
+| 7 | Updated sidebar and mobile drawer navigation links for all new pages | ✅ Done |
+| 8 | Updated `app/dashboard/layout.jsx` with title and breadcrumb mappings for all routes | ✅ Done |
+
+---
+
+### ✅ PHASE 12 — Dashboard UI Enhancements
+
+**Goal**: Improve dashboard charts, KPI cards, and the "Today's Table" component.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Updated `DashboardCharts.jsx` — added revenue/chart visual improvements | ✅ Done |
+| 2 | Updated `TodayTable.jsx` — renamed "Avg Ticket Size" (was "Avg Voucher Size") | ✅ Done |
+| 3 | Replaced all instances of "voucher" terminology with "consignment" across the UI | ✅ Done |
+| 4 | Updated `Spinner.jsx` component styles | ✅ Done |
+
+---
+
+### ✅ PHASE 13 — Favicon & Branding
+
+**Goal**: Add a proper favicon using the company logo and fix branding text near the logo.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Added `Logo-GM-FE.png` to `/public/` directory | ✅ Done |
+| 2 | Configured favicon in `app/layout.jsx` metadata (`icons.icon`) | ✅ Done |
+| 3 | Removed "FranchExpress ERP" text label next to logo in `Sidebar.jsx` | ✅ Done |
+| 4 | Removed "FranchExpress ERP" text label next to logo in `MobileDrawer.jsx` | ✅ Done |
+| 5 | Fixed Courier Partner dropdown — "Franch Express" set as default first option | ✅ Done |
+
+---
+
+### ✅ PHASE 14 — Logo Size & Sidebar Polish
+
+**Goal**: Fix logo proportions and sidebar header spacing.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Corrected logo height from `h-[68px]` (too tall) to `h-12` (48px) in `Sidebar.jsx` | ✅ Done |
+| 2 | Corrected logo height from `h-[68px]` to `h-12` in `MobileDrawer.jsx` | ✅ Done |
+| 3 | Logo is now properly proportioned inside the 80px (`h-20`) header area | ✅ Done |
+| 4 | Removed `translate-y` hack — logo sits naturally centered | ✅ Done |
+
+---
+
+### ✅ PHASE 15 — Profile Icon & Edit Profile Modal in TopBar
+
+**Goal**: Add a clickable profile avatar to the top-right corner that opens a profile editing modal.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Replaced plain user text card in `TopBar.jsx` with a clickable avatar button | ✅ Done |
+| 2 | Avatar shows user initials in a teal circle; highlights on hover | ✅ Done |
+| 3 | Built `ProfileModal` component inline in `TopBar.jsx` | ✅ Done |
+| 4 | Modal fields: Full Name, Email Address, Phone Number, Department, Designation | ✅ Done |
+| 5 | Save button has loading spinner + ✓ success animation | ✅ Done |
+| 6 | Modal closes via ✕ button, backdrop click, or `Escape` key | ✅ Done |
+| 7 | Smooth open/close animation with `modalSlideIn` keyframe | ✅ Done |
 
 ---
 
@@ -183,14 +259,30 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 | File | Change |
 |------|--------|
-| `app/layout.jsx` | Added SpeedInsights + Analytics; separated `viewport` export |
-| `app/dashboard/page.jsx` | Uses `fetchDashboardStats()` instead of full collection fetch |
-| `app/dashboard/delivery/page.jsx` | Date-filtered delivery fetch |
-| `app/api/consignments/route.js` | 30-day default, cursor pagination, `force-dynamic`, cache import fix |
-| `app/api/consignments/[id]/route.js` | Cache invalidation import fix, `force-dynamic` |
-| `app/api/consignments/stats/route.js` | New dedicated stats API with `count()` aggregations + 5-min cache |
-| `hooks/useConsignments.js` | `fetchDashboardStats()` + `loadMoreConsignments()` helpers |
-| `lib/stats-cache.js` | **[NEW]** Shared cache state module (decoupled from routes) |
+| `app/layout.jsx` | SpeedInsights + Analytics; favicon metadata; separated `viewport` export |
+| `app/dashboard/page.jsx` | Uses `fetchDashboardStats()`; chart & KPI improvements |
+| `app/dashboard/layout.jsx` | Title + breadcrumb mappings for all routes |
+| `app/dashboard/consignments/page.jsx` | **[NEW]** Paginated consignment list with filters |
+| `app/dashboard/consignments/[id]/page.jsx` | **[NEW]** Consignment detail + tracking timeline |
+| `app/dashboard/revenue/page.jsx` | **[NEW]** Revenue analytics page |
+| `app/dashboard/search/page.jsx` | **[NEW]** Multi-field consignment search |
+| `app/dashboard/sync/page.jsx` | **[NEW]** Sync logs admin page with manual trigger |
+| `app/api/consignments/route.js` | 30-day default, cursor pagination, `force-dynamic` |
+| `app/api/consignments/stats/route.js` | Stats API with `count()` aggregations + 5-min cache |
+| `app/api/consignments/sync/route.js` | **[NEW]** Cron-triggered bulk tracking sync (CRON_SECRET protected) |
+| `app/api/consignments/search/route.js` | **[NEW]** Multi-field consignment search API |
+| `app/api/consignments/revenue-stats/route.js` | **[NEW]** Revenue analytics data API |
+| `app/api/sync-logs/route.js` | **[NEW]** Sync execution log reader API |
+| `app/login/page.jsx` | Updated logo sizing; removed redundant subtext |
+| `components/layout/Sidebar.jsx` | Removed brand text; fixed logo to `h-12`; new nav links |
+| `components/layout/MobileDrawer.jsx` | Removed brand text; fixed logo to `h-12`; new nav links |
+| `components/layout/TopBar.jsx` | Replaced user text with clickable avatar + `ProfileModal` |
+| `components/consignment/TrackingTimeline.jsx` | **[NEW]** Rich delivery status timeline component |
+| `components/dashboard/DashboardCharts.jsx` | Chart visual improvements |
+| `components/dashboard/TodayTable.jsx` | Renamed "voucher" → "consignment" terminology |
+| `lib/tracking.js` | FranchExpress API status code parser |
+| `lib/stats-cache.js` | **[NEW]** Shared cache state module |
+| `public/Logo-GM-FE.png` | **[NEW]** Company logo for favicon + sidebar |
 | `firestore.rules` | Role-based Firestore security rules |
 
 ---
@@ -332,34 +424,12 @@ npx firebase deploy --only firestore:rules
 
 ---
 
-### 4. 🖼️ Favicon 404 — Missing Browser Icon
+### 4. 🖼️ Favicon
 
 **Priority**: Low  
-**Status**: Minor UX issue — does not affect functionality
+**Status**: ✅ Resolved — favicon configured using `Logo-GM-FE.png` in `app/layout.jsx`
 
-**Problem**:  
-The browser console shows a `favicon.ico` 404 error because no favicon file exists in the `/public/` directory. This causes an extra failed network request on every page load.
-
-**Fix**:
-1. Create or download a 32×32 or 64×64 `.ico` or `.png` file
-2. Place it at:
-   ```
-   /Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp/public/favicon.ico
-   ```
-3. Optionally, add a high-res PNG for modern browsers in `app/layout.jsx`:
-   ```jsx
-   export const metadata = {
-     title: 'FranchExpress ERP - Courier Service Management',
-     description: '...',
-     icons: {
-       icon: '/favicon.ico',
-       apple: '/apple-touch-icon.png',
-     },
-   };
-   ```
-4. Commit and redeploy
-
-> You can generate a free favicon from your logo at [favicon.io](https://favicon.io/) or [realfavicongenerator.net](https://realfavicongenerator.net/).
+The `Logo-GM-FE.png` is now referenced in `app/layout.jsx` `icons` metadata. No further action needed.
 
 ---
 
@@ -391,19 +461,35 @@ git remote -v
 
 ---
 
-### 6. 🔄 Bulk Status Auto-Sync & Tracking Timeline
+### 6. 🔄 Scheduled Auto-Sync & Tracking Timeline
 
 **Priority**: High  
-**Status**: Planned & Analyzed — Implementation Plan ready
+**Status**: Planned & Analyzed — Implementation Plan ready (Scheduler-based)
 
 **Background**:  
 The business needs to track the latest delivery status from the FranchExpress tracking API (`POST https://franchexpress.com/proxy.php`) for all pending consignments in Firestore and display a detailed tracking timeline to users.
 
 **What's Planned**:
-1. Add an admin page (`/dashboard/sync`) to trigger bulk updates.
-2. Develop a background batch synchronizer calling the proxy endpoint with a rate limit.
-3. Enhance the tracking modal with origin/destination details, consignment description, and a styled vertical status timeline mirroring the FranchExpress website.
+1. Add Vercel Cron configuration (`vercel.json`) to run the sync automatically at night (e.g. 2:00 AM UTC).
+2. Create secure endpoint `/api/consignments/sync` verifying `CRON_SECRET`.
+3. Save detailed execution metrics in `/sync_logs` Firestore collection.
+4. Add a `/dashboard/sync` logs page to show recent sync runs and support manually triggering sync.
+5. Enhance tracking modal to show live tracking status timeline.
 
 ---
 
-*Last updated: 2026-06-16*
+### 7. 🔐 CRON_SECRET Environment Variable
+
+**Priority**: High  
+**Status**: Required for production auto-sync to work
+
+The `/api/consignments/sync` endpoint is protected by a `CRON_SECRET` environment variable. Add it in Vercel:
+1. Go to **Vercel Dashboard → Project → Settings → Environment Variables**
+2. Add `CRON_SECRET` with a long random string (e.g. `openssl rand -hex 32`)
+3. Redeploy
+
+The Vercel Cron job in `vercel.json` passes this secret automatically via the `Authorization: Bearer` header.
+
+---
+
+*Last updated: 2026-06-17*

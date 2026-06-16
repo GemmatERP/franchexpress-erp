@@ -46,7 +46,7 @@ class ErrorBoundary extends Component {
   }
 }
 
-export function DashboardCharts({ volumeData = [], statusData = [], revenueData = [] }) {
+export function DashboardCharts({ volumeData = [], statusData = [] }) {
   // Color configuration mapping
   const COLORS = {
     'Transit': '#f59e0b',             // Amber
@@ -110,8 +110,8 @@ export function DashboardCharts({ volumeData = [], statusData = [], revenueData 
                   >
                     {statusData.map((entry, index) => (
                       <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[entry.name] || PIE_COLORS[index % PIE_COLORS.length]} 
+                         key={`cell-${index}`} 
+                         fill={COLORS[entry.name] || PIE_COLORS[index % PIE_COLORS.length]} 
                       />
                     ))}
                   </Pie>
@@ -129,43 +129,10 @@ export function DashboardCharts({ volumeData = [], statusData = [], revenueData 
           </ErrorBoundary>
         </div>
       </Card>
-
-      {/* 3. Line Chart: Daily Revenue Trend */}
-      <Card hoverEffect className="lg:col-span-3">
-        <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">
-          Daily Revenue Trend (Last 14 Days)
-        </h3>
-        <div className="h-64">
-          <ErrorBoundary>
-            {revenueData.length === 0 ? (
-              <EmptyChartState message="No revenue recorded in the last 14 days." />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f2ee" />
-                  <XAxis dataKey="date" tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E0E4D6' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#60CAAD"
-                    strokeWidth={2.5}
-                    activeDot={{ r: 6 }}
-                    dot={{ r: 3, fill: '#60CAAD', strokeWidth: 1 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </ErrorBoundary>
-        </div>
-      </Card>
     </div>
   );
 }
+
 
 function EmptyChartState({ message }) {
   return (

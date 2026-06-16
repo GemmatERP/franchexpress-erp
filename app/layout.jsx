@@ -26,6 +26,9 @@ const jetbrains = JetBrains_Mono({
 export const metadata = {
   title: 'FranchExpress ERP - Courier Service Management',
   description: 'Enterprise resource planner and shipment tracking for FranchExpress Courier Services, built with Next.js and Firebase.',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 // Next.js 14+ requires viewport to be a separate named export
