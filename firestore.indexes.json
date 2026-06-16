@@ -31,41 +31,6 @@
         { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "consignments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "_consigneeNameUpper", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "consignments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "_consignorNameUpper", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "consignments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "_consigneeCityUpper", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "consignments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "_consigneeStateUpper", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "sync_logs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []
