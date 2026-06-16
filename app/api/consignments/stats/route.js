@@ -78,14 +78,17 @@ export async function GET(req) {
     const todayBookings   = todayCountSnap.data().count;
     const pendingShipments = pendingCountSnap.data().count;
 
-    let todayRevenue = 0;
+    let todayPending = 0;
     let deliveredToday = 0;
     const todayItems = [];
     const todayStr = todayStart.toDateString();
 
     todayFullSnap.forEach((doc) => {
       const data = doc.data();
-      todayRevenue += Number(data.amount) || 0;
+      
+      if (['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
+        todayPending++;
+      }
 
       if (data.deliveryStatus === 'Delivered' && data.deliveredDate) {
         const dd = data.deliveredDate.toDate
@@ -103,23 +106,22 @@ export async function GET(req) {
       todayItems.push({ id: doc.id, ...data });
     });
 
-    // ── Chart data (last 14 days) ─────────────────────────────────────────
+    // ── Chart data (last 7 days and status counts) ─────────────────────────
     const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const ts7 = sevenDaysAgo.getTime();
+
+    let last7Delivered = 0;
+    let last7Pending = 0;
 
     const last7Map  = {};
-    const last14Map = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(today.getDate() - i);
       last7Map[d.toDateString()] = {
         name: d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
         consignments: 0,
-      };
-    }
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(); d.setDate(today.getDate() - i);
-      last14Map[d.toDateString()] = {
-        date: `${d.getDate()}/${d.getMonth() + 1}`,
-        amount: 0,
       };
     }
 
@@ -133,8 +135,17 @@ export async function GET(req) {
       const d = data.date?.toDate?.() ?? null;
       if (!d) return;
       const ds = d.toDateString();
-      if (last7Map[ds])  last7Map[ds].consignments++;
-      if (last14Map[ds]) last14Map[ds].amount += Number(data.amount) || 0;
+      const timeMs = d.getTime();
+
+      if (timeMs >= ts7) {
+        if (last7Map[ds])  last7Map[ds].consignments++;
+        if (data.deliveryStatus === 'Delivered') {
+          last7Delivered++;
+        } else if (['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
+          last7Pending++;
+        }
+      }
+
       if (data.deliveryStatus && statusCounts[data.deliveryStatus] !== undefined) {
         statusCounts[data.deliveryStatus]++;
       }
@@ -142,10 +153,16 @@ export async function GET(req) {
 
     // ── Build response ────────────────────────────────────────────────────
     const result = {
-      kpis: { todayBookings, pendingShipments, deliveredToday, todayRevenue },
+      kpis: { 
+        todayBookings, 
+        todayPending, 
+        deliveredToday, 
+        pendingShipments,
+        last7Delivered,
+        last7Pending
+      },
       todayItems,
       volumeChart:  Object.values(last7Map),
-      revenueChart: Object.values(last14Map),
       statusChart:  Object.entries(statusCounts)
         .filter(([, v]) => v > 0)
         .map(([name, value]) => ({ name, value })),

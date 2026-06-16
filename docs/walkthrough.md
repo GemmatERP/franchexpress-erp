@@ -1,56 +1,70 @@
-# FranchExpress ERP - Build Complete Walkthrough
+# Scheduled Auto-Sync + Tracking UI — Walkthrough
 
-The **FranchExpress ERP** courier service web application has been fully compiled and built from scratch.
+We have implemented the scheduled tracking synchronization feature using an external scheduler approach, along with a rich, premium tracking details timeline display inside the ERP.
 
-## Accomplishments
+## Key Changes Made
 
-We generated **all required files** without using placeholders or stubs. The project is ready to run, connect to Firebase, seed, and deploy immediately.
+### 1. Unified Tracking Service
+* **File**: `lib/tracking.js`
+* **Changes**: Implemented `fetchLiveStatus(awb)` which makes a direct proxy call to the FranchExpress tracking endpoint, extracts raw API fields, and maps them to a structured JSON schema. The `trackAWB` function has been updated to use this live status helper, seamlessly falling back to deterministic simulated updates if the proxy API fails or returns invalid data.
 
-### 🏛 Architecture & Project Configurations
-* [package.json](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/package.json): Installed custom frameworks: Next.js 14, React 18, Recharts, PapaParse, and SheetJS.
-* [tailwind.config.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/tailwind.config.js): Added custom color tokens (`fe-teal`, `fe-muted`, `fe-bg`, `fe-softgreen`) and mapped display fonts (Plus Jakarta Sans, Inter, JetBrains Mono).
-* [firestore.rules](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/firestore.rules) & [firestore.indexes.json](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/firestore.indexes.json): Enforced role-based Firestore writes and created composite indexes.
-* [middleware.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/middleware.js): Implemented server-side router protection redirecting non-auth visitors or restricting delivery agents to the delivery route page.
+### 2. Auto-Sync Backend API
+* **File**: `app/api/consignments/sync/route.js`
+* **Changes**: Added a `GET` endpoint. It authenticates requests either via an admin session token or by checking a query parameter `?secret=...` against the environment variable `SYNC_SECRET`. It queries all pending consignments in Firestore (within the last 60 days), queries their live tracking state sequentially with a 250ms delay, writes status/delivery date updates in batch, and logs the execution metrics in a new `/sync_logs` Firestore collection.
 
-### 📂 Core Utilities & Custom Hooks
-* [firebase.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/firebase.js) & [firebase-admin.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/firebase-admin.js): Configured both modular client SDK and server-side Admin SDK auth verifications.
-* [auth-context.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/auth-context.jsx): Synchronized user credentials into document cookies for fast middleware access checks.
-* [utils.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/utils.js): Built Indian numbering system currency formatters, DD-MM-YYYY date formatters, and regex validators.
-* [export.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/export.js): Configured spreadsheet download utilities using PapaParse and SheetJS.
-* [notifications.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/notifications.js): Pluggable system dispatching alerts via Twilio, Fast2SMS, or Wati.io.
-* [useConsignments.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useConsignments.js) & [useToast.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useToast.js): Shared state bindings for Toast notifications and backend CRUD calls.
+### 3. Sync History logs API
+* **File**: `app/api/sync-logs/route.js`
+* **Changes**: Added a `GET` route restricted to admin roles that retrieves the 30 most recent auto-sync runs.
 
-### 🎨 Reusable & Dashboard Specific UI Components
-* **Accessible Base UI Elements:** Created button, input, select, status badges, accessibility modal, spinner, and exit-animated toast components.
-* **Layout and Navigation:** Created desktop sidebar, mobile menu toggle, and sliding drawer navigation with screen-reader compatibility.
-* **Consignment Form panels:** Generated five collapsible sections with form state binding, Indian pincode/mobile validations, clipboard formatter copy, and live tracking timelines.
-* **Reporting components:** Generated summary panels, filter dropdowns, and exports tables.
-* **Delivery agent hub:** Formatted route cards supporting call triggers (`tel:`), WhatsApp (`wa.me`), and delivery status state updates.
+### 4. Admin Dashboard Sync Panel
+* **File**: `app/dashboard/sync/page.jsx`
+* **Changes**: Designed a responsive page displaying summary metrics of the last sync run, a complete execution logs history table showing trigger source (manual vs cron), duration, and collapsible rows revealing detailed per-AWB change descriptions. Added a "Run Sync Now" button to manually override and trigger the API.
 
-### ⚙️ Handlers, Routing Pages, and Seeds
-* **API Endpoints:** Wrote server controllers verifying client authorization headers, managing document transactions to increment counters, and tracking proxy scripts.
-* **Seeder:** [seed.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/scripts/seed.js) script registers the demo admin, employee, and delivery accounts and populates 15 realistic consignments across Tamil Nadu.
+### 5. Navigation Links
+* **Files**: `components/layout/Sidebar.jsx` and `components/layout/MobileDrawer.jsx`
+* **Changes**: Added the "Sync Logs" option to the navigation menu, visible only to users with the `admin` role.
+* **File**: `app/dashboard/layout.jsx`
+* **Changes**: Configured title mapping to display "Scheduled Auto-Sync Logs" for the sync route.
+
+### 6. Rich Tracking Timeline Component
+* **File**: `components/consignment/TrackingTimeline.jsx`
+* **Changes**: Replaced the previous timeline layout with a premium tracker featuring status badges, confirmation summaries, an origin/destination card, Proof of Delivery (POD) thumbnail with view details, and a vertical timeline using mapped Lucide icons.
 
 ---
 
-## 🛠 Validation Results
+## How to Test Locally
 
-The Next.js 14 configuration files, Tailwind assets, and helper scripts are successfully written in:
-* Directory: [franchexpress-erp/](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp)
+Before staging or committing any code, you can verify this setup locally.
 
-### Quick Start
-To get started:
-1. Navigate to the project folder and install dependencies:
-   ```bash
-   npm install
-   ```
-2. Create `.env.local` using the template `.env.local.example` and paste your Firebase account keys.
-3. Seed the database:
-   ```bash
-   node scripts/seed.js
-   ```
-4. Run locally:
-   ```bash
-   npm run dev
-   ```
-5. Log in with the demo credentials (e.g. `admin@fe.com` / `Admin@123`).
+### Step 1: Set up the Sync Secret Key
+Add the following line to your local `.env.local` file:
+```env
+SYNC_SECRET=local_sync_secret_key_123
+```
+
+### Step 2: Start the Local Server
+Navigate to the directory and run the dev server:
+```bash
+npm run dev
+```
+
+### Step 3: Test the Security & API Endpoint
+Open a web browser or run an API testing tool (like curl or Postman) against the sync API:
+* **Attempt unauthorized access** (should fail with `401 Unauthorized`):
+  `http://localhost:3000/api/consignments/sync`
+* **Attempt authorized access with secret** (should succeed and run the sync):
+  `http://localhost:3000/api/consignments/sync?secret=local_sync_secret_key_123`
+
+### Step 4: Login as Admin and Check the Dashboard Sync UI
+1. Go to `http://localhost:3000/login`
+2. Log in using Admin credentials:
+   * **Email**: `admin@fe.com`
+   * **Password**: `Admin@123`
+3. Click on the new **Sync Logs** navigation item in the sidebar (or visit `http://localhost:3000/dashboard/sync`).
+4. Click **Run Sync Now** to manually trigger the sync and witness the log table update in real time.
+5. Click **View** on the log entry row to see exactly which AWBs changed status or why they were skipped.
+
+### Step 5: Test the Rich Tracking Modal
+1. Go to **Reports & Export** (or click on any consignment).
+2. Click **Edit** or inspect details of any consignment.
+3. Observe the upgraded **Tracking Details** card which now renders the detailed grid, status timeline, and signature/POD image (if marked as Delivered).

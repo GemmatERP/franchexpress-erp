@@ -29,7 +29,7 @@ export function TodayTable({ consignments = [], onView }) {
               No consignments booked today
             </p>
             <p className="text-[10px] text-fe-gray mt-0.5">
-              Go to the New Consignment page to create shipment vouchers.
+              Go to the New Consignment page to book shipments.
             </p>
           </div>
         ) : (

@@ -28,17 +28,28 @@ export default function DashboardLayout({ children }) {
     // Build titles
     if (pathname === '/dashboard') {
       setPageTitle('Overview Dashboard');
+    } else if (pathname === '/dashboard/consignments') {
+      setPageTitle('Consignments Hub');
     } else if (pathname === '/dashboard/consignments/new') {
       setPageTitle('New Consignment Booking');
     } else if (pathname.startsWith('/dashboard/consignments/edit')) {
       setPageTitle('Modify Consignment');
+    } else if (pathname.startsWith('/dashboard/consignments/')) {
+      setPageTitle('Consignment Details');
+    } else if (pathname === '/dashboard/revenue') {
+      setPageTitle('Revenue Analytics');
     } else if (pathname === '/dashboard/delivery') {
       setPageTitle('Delivery Agent Hub');
     } else if (pathname === '/dashboard/reports') {
       setPageTitle('Reports & Business Intelligence');
+    } else if (pathname === '/dashboard/sync') {
+      setPageTitle('Scheduled Auto-Sync Logs');
+    } else if (pathname === '/dashboard/search') {
+      setPageTitle('Find Consignments');
     } else {
       setPageTitle('FranchExpress ERP');
     }
+
   }, [pathname]);
 
   // Auth Guard check
