@@ -91,7 +91,7 @@ export default function ReportsPage() {
     }
   };
 
-  const courierOptions = ['All', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
+  const courierOptions = ['All', 'Franch Express', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
   const statusOptions = ['All', 'Transit', 'Reached Destination', 'Out of Delivery', 'Returned', 'Holding at HUB', 'Delivered'];
   const paymentModeOptions = ['All', 'CASH', 'UPI', 'CREDIT', 'To Pay', 'Debit'];
 
