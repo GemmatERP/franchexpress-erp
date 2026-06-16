@@ -1,133 +1,255 @@
-# FranchExpress ERP Courier Service - Implementation Plan
+# Bulk Status Sync + Tracking UI — Implementation Plan (Revised)
 
-We are building a production-grade, highly-functional Mini ERP web application for a Courier Service called **FranchExpress ERP**. 
+## Goal
 
-## User Review Required
-
-> [!IMPORTANT]
-> **Workspace Directory:** Since you do not currently have an active workspace set in the editor, we will initialize this project inside a new directory: `C:\Users\lucif\.gemini\antigravity-ide\scratch\franchexpress-erp`.
-> 
-> We strongly recommend setting `C:\Users\lucif\.gemini\antigravity-ide\scratch\franchexpress-erp` as your active workspace in the IDE once the files are generated to allow direct compilation and development.
-
-> [!WARNING]
-> **Firebase Configuration:** The application requires a standard Firebase Firebase Auth and Firestore setup. You will need to create a Firebase Project, enable Email/Password Authentication, create a Firestore Database in native mode, and obtain your Firebase Admin SDK service account key. The configuration values should be placed in your `.env.local` file.
-
-> [!NOTE]
-> All UI components will be responsive, light-theme only, complying with WCAG 2.1 AA accessibility guidelines, utilizing a custom color palette configured in `tailwind.config.js`.
-
-## Open Questions
-No major open questions. The requirements are fully detailed, specifying every single file to generate and their behaviors (including Indian currency formatting, SNO counter generation with Firestore transactions, CORS-safe tracking proxy, and pluggable notification logic).
-
-## Proposed Changes
-
-We will create a brand new Next.js 14 project structure inside `C:\Users\lucif\.gemini\antigravity-ide\scratch\franchexpress-erp`. The key components and file layout include:
-
-### 1. Project Configuration & Metadata
-
-* `[NEW]` [package.json](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/package.json): Defines all next.js, react, firebase, tailwind css, and helper dependencies.
-* `[NEW]` [tailwind.config.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/tailwind.config.js): Custom colors (e.g. `fe-teal`, `fe-bg`, `fe-muted`, `fe-green`), typography and animations.
-* `[NEW]` [next.config.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/next.config.js): Next.js configuration.
-* `[NEW]` [vercel.json](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/vercel.json): Vercel-specific deployment configuration.
-* `[NEW]` [firestore.rules](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/firestore.rules): Security rules restricting collections access based on user role (Admin vs Employee vs Delivery).
-* `[NEW]` [firestore.indexes.json](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/firestore.indexes.json): Firestore index configuration for compound queries (e.g., filtering reports).
-* `[NEW]` [.env.local.example](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/.env.local.example): Configuration template.
-* `[NEW]` [middleware.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/middleware.js): Route guard protecting `/dashboard/*` path.
-
-### 2. Core Service Utilities (`lib/`)
-
-* `[NEW]` [firebase.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/firebase.js): Client SDK initialization.
-* `[NEW]` [firebase-admin.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/firebase-admin.js): Server-side Admin SDK initialization using private keys from environment.
-* `[NEW]` [auth-context.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/auth-context.jsx): React context capturing firebase auth state, fetching user profile roles from Firestore.
-* `[NEW]` [notifications.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/notifications.js): Notification router routing alerts through Wati.io, Fast2SMS, Twilio, or none, based on config.
-* `[NEW]` [export.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/export.js): Formats data and downloads CSV (via `papaparse`) and Excel (via `xlsx`) reports.
-* `[NEW]` [tracking.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/tracking.js): Service querying the external FranchExpress endpoint or fallback tracker.
-* `[NEW]` [utils.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/lib/utils.js): SNO generators, date formatters, and Indian currency system formatters.
-
-### 3. Custom Hooks (`hooks/`)
-
-* `[NEW]` [useConsignments.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useConsignments.js): CRUD hooks for consignment records.
-* `[NEW]` [useAuth.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useAuth.js): Helper wrapper for Auth context.
-* `[NEW]` [useTracking.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useTracking.js): Interface for tracking operations.
-* `[NEW]` [useToast.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/hooks/useToast.js): Layout toast notification state.
-
-### 4. Layout & UI Components (`components/`)
-
-* **Base UI Elements:**
-  * `[NEW]` [Button.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Button.jsx)
-  * `[NEW]` [Input.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Input.jsx)
-  * `[NEW]` [Select.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Select.jsx)
-  * `[NEW]` [Badge.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Badge.jsx)
-  * `[NEW]` [Card.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Card.jsx)
-  * `[NEW]` [Modal.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Modal.jsx)
-  * `[NEW]` [Toast.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Toast.jsx)
-  * `[NEW]` [Spinner.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/ui/Spinner.jsx)
-* **Shell Navigation Layout:**
-  * `[NEW]` [Sidebar.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/layout/Sidebar.jsx)
-  * `[NEW]` [TopBar.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/layout/TopBar.jsx)
-  * `[NEW]` [MobileDrawer.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/layout/MobileDrawer.jsx)
-* **Dashboard Widgets:**
-  * `[NEW]` [KPICard.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/dashboard/KPICard.jsx)
-  * `[NEW]` [DashboardCharts.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/dashboard/DashboardCharts.jsx)
-  * `[NEW]` [TodayTable.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/dashboard/TodayTable.jsx)
-  * `[NEW]` [PendingTable.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/dashboard/PendingTable.jsx)
-* **Consignment Form Sub-Sections:**
-  * `[NEW]` [ConsignmentForm.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/ConsignmentForm.jsx)
-  * `[NEW]` [ShipmentSection.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/ShipmentSection.jsx)
-  * `[NEW]` [PaymentSection.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/PaymentSection.jsx)
-  * `[NEW]` [ConsignorSection.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/ConsignorSection.jsx)
-  * `[NEW]` [ConsigneeSection.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/ConsigneeSection.jsx)
-  * `[NEW]` [DeliverySection.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/DeliverySection.jsx)
-  * `[NEW]` [TrackingTimeline.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/TrackingTimeline.jsx)
-  * `[NEW]` [CopyButton.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/consignment/CopyButton.jsx)
-* **Delivery View Card:**
-  * `[NEW]` [DeliveryCard.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/delivery/DeliveryCard.jsx)
-* **Reports Components:**
-  * `[NEW]` [ReportsTable.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/reports/ReportsTable.jsx)
-  * `[NEW]` [ReportsSummary.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/reports/ReportsSummary.jsx)
-  * `[NEW]` [ExportButtons.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/components/reports/ExportButtons.jsx)
-
-### 5. Next.js Routing Pages (`app/`)
-
-* `[NEW]` [layout.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/layout.jsx): Font loader (Jakarta, Inter, JetBrains) and Global Toast/Auth wrapper.
-* `[NEW]` [globals.css](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/globals.css): Tailwind CSS rules and custom theme base.
-* `[NEW]` [page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/page.jsx): Root redirection module to dashboard/login.
-* `[NEW]` [login/page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/login/page.jsx): Framer-motion animated login page.
-* `[NEW]` [dashboard/layout.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/dashboard/layout.jsx): Main dashboard shell layout featuring topbar and sidebar navigation.
-* `[NEW]` [dashboard/page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/dashboard/page.jsx): Dashboard index (Charts, Tables, KPIs).
-* `[NEW]` [dashboard/consignments/new/page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/dashboard/consignments/new/page.jsx): New consignment form assembly.
-* `[NEW]` [dashboard/delivery/page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/dashboard/delivery/page.jsx): Delivery agent specialized card view.
-* `[NEW]` [dashboard/reports/page.jsx](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/dashboard/reports/page.jsx): Report filters, table dashboard.
-
-### 6. API Route Handlers (`app/api/`)
-
-* `[NEW]` [app/api/consignments/route.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/api/consignments/route.js): REST list and create endpoints with verification.
-* `[NEW]` [app/api/consignments/[id]/route.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/api/consignments/[id]/route.js): Single record GET/PUT/DELETE handler with role permissions.
-* `[NEW]` [app/api/track/route.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/api/track/route.js): CORS-bypassing proxy sending requests to `franchexpress.com` or falling back to simulated timeline values.
-* `[NEW]` [app/api/notify/route.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/app/api/notify/route.js): External SMS/WA trigger API.
-
-### 7. Helper Documentation & Seed scripts
-
-* `[NEW]` [scripts/seed.js](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/scripts/seed.js): Node.js script using Firebase Admin SDK to create demo users, seed 15 realistic Tamil Nadu consignments, and set counters.
-* `[NEW]` [NOTIFICATIONS.md](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/NOTIFICATIONS.md): Setup recommendation.
-* `[NEW]` [README.md](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/README.md): Detailed installation and setup guidelines.
+1. **Bulk Sync**: Query every pending consignment against the FranchExpress API and auto-update Firestore status
+2. **Rich Tracking Modal**: Show the full tracking detail (matching the FranchExpress website layout) inside our ERP when a user clicks on any consignment
 
 ---
 
-## Verification Plan
+## Part 1 — API Response Field Analysis
 
-### Automated Verification
-Since the project relies on external environment variables (Firebase key setup), we will write a validation phase verifying compile safety.
-* Run `npm run build` or `npx next info` to verify configuration files are set.
-* We can use Node.js tests or script checks to confirm compilation is valid.
+### Full Response Structure
+```json
+{
+  "status": "success",
+  "data": {
+    "dl_status":     "1",
+    "dl_status_txt": "Delivered",
+    "orgin":         "TNMAA-LCS",
+    "dest":          "TNMAA-PA1",
+    "consignment":   "MDox - 1 Nos",
+    "frm_addr":      "<br>",
+    "to_addr":       "<br>",
+    "ud_for":        "",
+    "bk_dtm":        "05-06-2026 1:40 AM",
+    "delv_dtm":      "06-06-2026 10:26 PM",
+    "pod_image":     "https://erpstcourier.com/img/pod/20260606/48071025984-pod.jpg",
+    "tracking": [
+      {
+        "trans_dtm":  "2026-06-06 22:26:05",
+        "trans_for":  "Delivered",
+        "awb_colors": "success",
+        "awb_icons":  "fa-check-square-o",
+        "from":       "PARUTHUPATTU -1 BA, TN",
+        "to":         "",
+        "staff_area": ""
+      }
+    ]
+  }
+}
+```
 
-### Manual Verification
-Upon generating the project:
-1. Initialize dependencies using `npm install`.
-2. Configure `.env.local` with real Firebase parameters.
-3. Seed database using `node scripts/seed.js`.
-4. Launch the local dev server using `npm run dev` and test:
-   * Login using the admin credentials `admin@fe.com` / `Admin@123`.
-   * Open the dashboard to see KPIs, Charts, and today's consignments.
-   * Add a new consignment, test copying values, mock tracking, and notification trigger.
-   * View the delivery page and test filter parameters on the reports screen.
-   * Download Excel and CSV file outputs.
+---
+
+## Part 2 — Field → UI Element Mapping
+
+This maps every API field to what it shows in the FranchExpress website UI (and what we'll mirror in our ERP).
+
+### Header Section
+| API Field | UI Label | Notes |
+|-----------|----------|-------|
+| `data.dl_status_txt` | **Main status badge** (e.g. "Delivered") | Big bold text, color based on status |
+| `data.delv_dtm` | "Your order is Delivered on **{date}** at location: **{dest}**" | Only shown when `dl_status_txt === "Delivered"` |
+| `data.dest` | Location in the delivery confirmation line | Combined with `delv_dtm` |
+
+### Info Grid (the grey card)
+| API Field | UI Label |
+|-----------|----------|
+| `data.orgin` | **Origin SRC** |
+| `data.dest` | **Destination** |
+| `data.consignment` | **Consignment** (e.g. "MDox - 1 Nos") |
+| `data.bk_dtm` | **Book Date/Time** |
+| `data.delv_dtm` | **Delivery Date/Time** (hidden if not yet delivered) |
+
+### POD (Proof of Delivery) Image
+| API Field | UI Label | Notes |
+|-----------|----------|-------|
+| `data.pod_image` | **POD Image** thumbnail + full-screen link | Only shown when delivered & URL is not empty |
+
+### Tracking Timeline (vertical list)
+Each entry in `data.tracking[]` maps to one timeline row:
+
+| API Field | UI Element |
+|-----------|-----------|
+| `tracking[].trans_dtm` | **Date + Time** column (left side) |
+| `tracking[].trans_for` | **Status text** (e.g. "Delivered", "Out for Delivery") |
+| `tracking[].awb_colors` | **Dot/icon background color** (see color map below) |
+| `tracking[].awb_icons` | **Icon** shown in the timeline dot (see icon map below) |
+| `tracking[].from` | **Location line** below status text |
+| `tracking[].to` | **Route arrow** → appended to location if not empty (e.g. "Chennai hub, TN → PARUTHUPATTU -1 BA, TN") |
+
+---
+
+## Part 3 — Color & Icon Mapping
+
+### `awb_colors` → CSS / Tailwind Color
+| API Value | Meaning | Our Color |
+|-----------|---------|-----------|
+| `success` | Delivered / Out for Delivery | `#14b8a6` (fe-teal / green) |
+| `info` | In transit / forwarded | `#3b82f6` (blue) |
+| `warning` | On hold / exception | `#f59e0b` (amber) |
+| `danger` | Failed / returned | `#ef4444` (red) |
+
+### `awb_icons` → Our SVG / Lucide Icon
+| API Value | FontAwesome meaning | Our Lucide equivalent |
+|-----------|--------------------|-----------------------|
+| `fa-check-square-o` | Delivered | `CheckSquare` |
+| `fa-file-text-o` | Out for Delivery / processed | `FileText` |
+| `fa-truck` | In transit / forwarded | `Truck` |
+| `fa-home` | Held at hub | `Home` |
+| `fa-times-circle` | Returned / failed | `XCircle` |
+
+---
+
+## Part 4 — Internal Status Mapping (for Firestore updates)
+
+| `dl_status_txt` from API | → Our `deliveryStatus` field | Also update |
+|--------------------------|------------------------------|-------------|
+| `Delivered` | `Delivered` | Set `deliveredDate` from `delv_dtm` |
+| `Out for Delivery` | `Out of Delivery` | — |
+| `Reached Destination` | `Reached Destination` | — |
+| `Processed & Forwarded to Service Center` | `Transit` | — |
+| `Holding…` / `Hold…` | `Holding at HUB` | — |
+| `Returned` / `Return…` | `Returned` | — |
+| API error / timeout / unknown | *(skip — no write)* | — |
+
+---
+
+## Part 5 — What We'll Build
+
+---
+
+### A. New API Route — `app/api/consignments/sync/route.js`
+
+**POST** endpoint — Admin only.
+
+**Request body:**
+```json
+{ "awbs": [{ "id": "firestore_doc_id", "awb": "48071025984" }] }
+```
+
+**Processing per AWB:**
+1. Call `POST https://franchexpress.com/proxy.php` with `{ awb, captcha: "" }`
+2. Parse `data.dl_status_txt`, `data.delv_dtm`, `data.orgin`, `data.dest`
+3. Map to internal status
+4. If status changed → add to Firestore `writeBatch()`
+5. Return per-AWB result: `updated | skipped | failed`
+
+**Response:**
+```json
+{
+  "processed": 20,
+  "updated": 14,
+  "skipped": 5,
+  "failed": 1,
+  "details": [
+    { "awb": "48071025984", "result": "updated", "oldStatus": "Transit", "newStatus": "Delivered" },
+    { "awb": "48071025123", "result": "skipped", "reason": "status unchanged" },
+    { "awb": "48071099999", "result": "failed",  "reason": "API timeout" }
+  ]
+}
+```
+
+---
+
+### B. Enhanced `lib/tracking.js` — `fetchLiveStatus(awb)`
+
+New exported function (separate from `trackAWB` which is for the public tracker):
+
+```js
+export async function fetchLiveStatus(awb) {
+  // Returns: { statusTxt, deliveredAt, origin, dest, timeline } | null
+}
+```
+
+---
+
+### C. New Admin Page — `app/dashboard/sync/page.jsx`
+
+**URL**: `/dashboard/sync`  
+**Access**: Admin only (redirects others to `/dashboard`)
+
+**UI Layout** (mirrors ERP style):
+
+```
+┌──────────────────────────────────────────────────┐
+│  🔄 Bulk Status Sync                              │
+│  Auto-fetch latest delivery status from FE API   │
+├──────────────────────────────────────────────────┤
+│  Sync last [ 60 ] days   [ ~842 pending ]        │
+│                          [ Start Sync ▶ ]        │
+├──────────────────────────────────────────────────┤
+│  Progress  ████████████░░░░░  240 / 842          │
+│  ✅ Updated: 178   ⏭ Skipped: 61   ❌ Failed: 3  │
+├──────────────────────────────────────────────────┤
+│  AWB           Old Status     New Status  Result  │
+│  48071025984   Transit        Delivered   ✅       │
+│  48071025123   Out of Del.    Out of Del. ⏭       │
+│  48071099999   Transit        —           ❌       │
+├──────────────────────────────────────────────────┤
+│  [ ⬇ Download CSV Report ]                       │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+### D. Enhanced Tracking Modal in Consignment List
+
+**Where**: Existing consignment list / detail view — "Track" button
+
+**What changes**: Instead of the current simulated data, show a proper modal that mirrors the FranchExpress website layout:
+
+```
+┌──────────────────────────────────────────────────┐
+│  AWB No: #48071025984          [ ✕ Close ]       │
+│  ● Delivered                                     │
+│  Delivered on 06-06-2026 10:26 PM · TNMAA-PA1   │
+├──────────────────────────────────────────────────┤
+│  Origin SRC  │ Destination │ Consignment          │
+│  TNMAA-LCS   │ TNMAA-PA1  │ MDox - 1 Nos         │
+│  Book Date/Time           │ Delivery Date/Time    │
+│  05-06-2026 1:40 AM       │ 06-06-2026 10:26 PM   │
+├──────────────────────────────────────────────────┤
+│  [POD Image Thumbnail] → click to open full view │
+├──────────────────────────────────────────────────┤
+│  Tracking Timeline                               │
+│  ─────────────────────────────────────────────  │
+│  06 Jun 22:26  ✅  Delivered                     │
+│                    PARUTHUPATTU -1 BA, TN        │
+│  06 Jun 11:44  📄  Out for Delivery              │
+│                    PARUTHUPATTU -1 BA, TN        │
+│  05 Jun 13:52  📄  Out for Delivery              │
+│                    PARUTHUPATTU -1 BA, TN        │
+│  05 Jun 01:40  🚚  Processed & Forwarded         │
+│                    Chennai hub → PARUTHUPATTU    │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 6 — Files to Create / Modify
+
+| File | Action | What Changes |
+|------|--------|--------------|
+| `lib/tracking.js` | MODIFY | Add `fetchLiveStatus(awb)` for sync use |
+| `app/api/consignments/sync/route.js` | NEW | Batch sync API route |
+| `app/dashboard/sync/page.jsx` | NEW | Admin bulk sync UI page |
+| `app/dashboard/layout.jsx` | MODIFY | Add "Sync" nav link (admin only) |
+| `app/api/track/route.js` | MODIFY | Update to return structured JSON (not HTML-parsed) |
+| Existing tracking modal/component | MODIFY | Render new rich tracking UI with timeline, info grid, POD image |
+
+---
+
+## Part 7 — Verification Plan
+
+| Test | Expected |
+|------|----------|
+| Navigate to `/dashboard/sync` as Admin | Page loads with config panel |
+| Navigate to `/dashboard/sync` as Employee | Redirected to `/dashboard` |
+| Click "Start Sync" with 5-day window | Progress bar increments, results table fills |
+| AWB with no tracking data | Appears as Failed, sync continues |
+| Click "Track" on any consignment | Modal shows live data with timeline |
+| POD image exists | Thumbnail shown, click opens full image |
+| POD image missing | Section hidden cleanly |
+| Download CSV | File downloads with correct columns |
