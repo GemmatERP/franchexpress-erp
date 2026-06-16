@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../lib/firebase-admin';
 import { formatSNO } from '../../../lib/utils';
-import { invalidateStatsCache } from '../../../lib/stats-cache';
+import { invalidateStatsCache, getCachedRole, setCachedRole } from '../../../lib/stats-cache';
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -20,17 +20,24 @@ async function authenticate(req) {
 }
 
 async function getUserRole(uid) {
+  // Check in-memory role cache first (60s TTL) — avoids 1 extra read per request
+  const cached = getCachedRole(uid);
+  if (cached) return cached;
+
   try {
     const userDoc = await adminDb.collection('users').doc(uid).get();
-    return userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+    const role = userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+    setCachedRole(uid, role);
+    return role;
   } catch {
     return 'employee';
   }
 }
 
 // ─── GET /api/consignments ────────────────────────────────────────────────────
-// Supports cursor-based pagination. Always defaults to last 30 days if no
-// date filter provided, preventing unbounded collection scans.
+// Uses real Firestore cursor-based pagination (.startAfter) so only the
+// requested page is read from the database — not the entire date-window.
+// Composite index required: (date ASC/DESC, deliveryStatus, courierPartner, paymentMode)
 
 export async function GET(req) {
   try {
@@ -48,9 +55,7 @@ export async function GET(req) {
 
     let queryRef = adminDb.collection('consignments');
 
-    // ── Date filters (REQUIRED for efficiency) ───────────────────────────
-    // If the caller provides no date range we default to the last 30 days.
-    // This prevents loading the entire collection on unfiltered queries.
+    // ── Date filters ─────────────────────────────────────────────────────────
     if (!fromDate && !toDate) {
       const defaultStart = new Date();
       defaultStart.setDate(defaultStart.getDate() - 30);
@@ -69,11 +74,40 @@ export async function GET(req) {
       }
     }
 
-    // Sort by date descending (uses default single-field index)
+    // ── Push equality filters into Firestore (composite index required) ──────
+    // This avoids fetching all docs then filtering in JS.
+    // Falls back to in-memory only when multiple inequality filters would conflict.
+    if (deliveryStatus && deliveryStatus !== 'All') {
+      queryRef = queryRef.where('deliveryStatus', '==', deliveryStatus);
+    }
+    if (courierPartner && courierPartner !== 'All') {
+      queryRef = queryRef.where('courierPartner', '==', courierPartner);
+    }
+    if (paymentMode && paymentMode !== 'All') {
+      queryRef = queryRef.where('paymentMode', '==', paymentMode);
+    }
+
+    // Sort by date descending
     queryRef = queryRef.orderBy('date', 'desc');
 
-    const snapshot = await queryRef.get();
-    let documents = snapshot.docs.map((doc) => {
+    // ── Real Firestore cursor-based pagination (.startAfter) ─────────────────
+    // Only reads `pageLimit + 1` docs from the DB instead of the entire window.
+    if (cursor) {
+      const cursorDoc = await adminDb.collection('consignments').doc(cursor).get();
+      if (cursorDoc.exists) {
+        queryRef = queryRef.startAfter(cursorDoc);
+      }
+    }
+
+    // Fetch one extra doc to determine if there is a next page
+    const snapshot = await queryRef.limit(pageLimit + 1).get();
+
+    const allDocs = snapshot.docs;
+    const hasMore = allDocs.length > pageLimit;
+    const pageDocs = hasMore ? allDocs.slice(0, pageLimit) : allDocs;
+    const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;
+
+    const data = pageDocs.map((doc) => {
       const d = doc.data();
       if (d.date)          d.date          = d.date.toDate().toISOString();
       if (d.paymentDate)   d.paymentDate   = d.paymentDate?.toDate?.()?.toISOString()   ?? d.paymentDate;
@@ -82,32 +116,8 @@ export async function GET(req) {
       return { id: doc.id, ...d };
     });
 
-    // ── Additional filters in-memory (No indexes needed) ──────────────────
-    if (courierPartner && courierPartner !== 'All') {
-      documents = documents.filter((doc) => doc.courierPartner === courierPartner);
-    }
-    if (deliveryStatus && deliveryStatus !== 'All') {
-      documents = documents.filter((doc) => doc.deliveryStatus === deliveryStatus);
-    }
-    if (paymentMode && paymentMode !== 'All') {
-      documents = documents.filter((doc) => doc.paymentMode === paymentMode);
-    }
-
-    // ── Pagination in-memory ──────────────────────────────────────────────
-    let startIndex = 0;
-    if (cursor) {
-      const idx = documents.findIndex((doc) => doc.id === cursor);
-      if (idx !== -1) {
-        startIndex = idx + 1;
-      }
-    }
-
-    const pageDocs = documents.slice(startIndex, startIndex + pageLimit);
-    const hasMore = (startIndex + pageLimit) < documents.length;
-    const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;
-
     return NextResponse.json(
-      { data: pageDocs, nextCursor, hasMore, total: documents.length },
+      { data, nextCursor, hasMore },
       { headers: { 'Cache-Control': 'private, max-age=60' } }
     );
   } catch (err) {
@@ -147,15 +157,21 @@ export async function POST(req) {
       }
     });
 
+    // Normalize text search fields to uppercase for efficient prefix queries
     const docData = {
       ...body,
-      sno:           formatSNO(nextCount),
-      date:          body.date          ? admin.firestore.Timestamp.fromDate(new Date(body.date))          : admin.firestore.Timestamp.now(),
-      paymentDate:   body.paymentDate   ? admin.firestore.Timestamp.fromDate(new Date(body.paymentDate))   : null,
-      deliveredDate: body.deliveredDate ? admin.firestore.Timestamp.fromDate(new Date(body.deliveredDate)) : null,
-      createdAt:     admin.firestore.Timestamp.now(),
-      createdBy:     decodedToken.uid,
-      createdByName: decodedToken.name || decodedToken.email,
+      sno:                  formatSNO(nextCount),
+      date:                 body.date          ? admin.firestore.Timestamp.fromDate(new Date(body.date))          : admin.firestore.Timestamp.now(),
+      paymentDate:          body.paymentDate   ? admin.firestore.Timestamp.fromDate(new Date(body.paymentDate))   : null,
+      deliveredDate:        body.deliveredDate ? admin.firestore.Timestamp.fromDate(new Date(body.deliveredDate)) : null,
+      createdAt:            admin.firestore.Timestamp.now(),
+      createdBy:            decodedToken.uid,
+      createdByName:        decodedToken.name || decodedToken.email,
+      // Normalized fields for efficient case-insensitive prefix search
+      _consigneeNameUpper:  (body.consigneeName  || '').toUpperCase(),
+      _consignorNameUpper:  (body.consignorName  || '').toUpperCase(),
+      _consigneeCityUpper:  (body.consigneeCity  || '').toUpperCase(),
+      _consigneeStateUpper: (body.consigneeState || '').toUpperCase(),
     };
 
     const docRef = await adminDb.collection('consignments').add(docData);

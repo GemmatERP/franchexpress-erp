@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
 import { fetchLiveStatus } from '../../../../lib/tracking';
-import { invalidateStatsCache } from '../../../../lib/stats-cache';
+import { invalidateStatsCache, getCachedRole, setCachedRole } from '../../../../lib/stats-cache';
 
 // Helper to delay execution (prevent rate limiting issues on FranchExpress server)
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,13 +37,18 @@ export async function GET(req) {
         try {
           const token = authHeader.split('Bearer ')[1];
           const decodedToken = await adminAuth.verifyIdToken(token);
-          // Check role in users collection
-          const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-          if (userDoc.exists && userDoc.data().role === 'admin') {
+          // Check role cache first, then Firestore
+          let role = getCachedRole(decodedToken.uid);
+          if (!role) {
+            const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+            role = userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+            setCachedRole(decodedToken.uid, role);
+          }
+          if (role === 'admin') {
             isAuthorizedUser = true;
             trigger = 'admin_manual';
             triggeredByUid = decodedToken.uid;
-            triggeredByName = userDoc.data().name || 'Admin';
+            triggeredByName = decodedToken.name || 'Admin';
           }
         } catch (authErr) {
           console.warn('Firebase token auth failed in sync route:', authErr.message);
@@ -60,32 +65,22 @@ export async function GET(req) {
 
     const startTime = Date.now();
 
-    // Query pending consignments (no date filter in Firestore query to avoid needing a composite index)
-    const consignmentsSnap = await adminDb.collection('consignments')
-      .where('deliveryStatus', 'in', ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
-      .get();
-
+    // Compute 60-day cutoff date for Firestore query
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    sixtyDaysAgo.setHours(0, 0, 0, 0);
+    const ts60 = admin.firestore.Timestamp.fromDate(sixtyDaysAgo);
 
-    // Filter by date range in-memory
-    const filteredDocs = consignmentsSnap.docs.filter(doc => {
-      const data = doc.data();
-      if (!data.date) return false;
-      try {
-        const bookingDate = data.date.toDate();
-        return bookingDate >= sixtyDaysAgo;
-      } catch (e) {
-        return false;
-      }
-    });
+    // ── Optimized: date filter pushed into Firestore, not in-memory ──────────
+    // Composite index required: (deliveryStatus ASC, date ASC)
+    // This avoids fetching all pending docs across all time then discarding old ones.
+    const consignmentsSnap = await adminDb.collection('consignments')
+      .where('deliveryStatus', 'in', ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
+      .where('date', '>=', ts60)
+      .orderBy('date', 'desc')
+      .get();
 
-    // Sort by booking date desc (in-memory)
-    filteredDocs.sort((a, b) => {
-      const dateA = a.data().date ? a.data().date.toDate() : new Date(0);
-      const dateB = b.data().date ? b.data().date.toDate() : new Date(0);
-      return dateB - dateA;
-    });
+    const filteredDocs = consignmentsSnap.docs;
 
     const pendingCount = filteredDocs.length;
     

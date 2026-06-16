@@ -4,42 +4,67 @@
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "deliveryStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "deliveryStatus", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "courierPartner",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "courierPartner", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "paymentMode",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "paymentMode", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "_consigneeNameUpper", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "_consignorNameUpper", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "_consigneeCityUpper", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "_consigneeStateUpper", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sync_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     }
   ],

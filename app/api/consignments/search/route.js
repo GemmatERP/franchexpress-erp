@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth } from '../../../../lib/firebase-admin';
+import { getCachedRole, setCachedRole } from '../../../../lib/stats-cache';
 
 // Auth helper
 async function authenticate(req) {
@@ -17,14 +18,15 @@ async function authenticate(req) {
   }
 }
 
-// Helper to check user authorization
+// Check user authorization with role cache
 async function getUserRole(uid) {
+  const cached = getCachedRole(uid);
+  if (cached) return cached;
   try {
     const userDoc = await adminDb.collection('users').doc(uid).get();
-    if (userDoc.exists) {
-      return userDoc.data().role || 'employee';
-    }
-    return 'employee';
+    const role = userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+    setCachedRole(uid, role);
+    return role;
   } catch (err) {
     return 'employee';
   }
@@ -60,7 +62,7 @@ export async function GET(req) {
 
     // 1. Numeric Query Routing (AWB / Phones)
     if (/^\d+$/.test(query)) {
-      // Exact matches (very efficient)
+      // Exact matches (very efficient — uses equality index)
       queryPromises.push(
         adminDb.collection('consignments').where('awbNumber', '==', query).get()
       );
@@ -71,29 +73,33 @@ export async function GET(req) {
         adminDb.collection('consignments').where('consignorPhone', '==', query).get()
       );
     } 
-    // 2. Alphabetic/Text Query Routing (Names, Cities, States)
+    // 2. SNO Query (FE-XXXX format)
+    else if (/^fe-?\d+$/i.test(query)) {
+      queryPromises.push(
+        adminDb.collection('consignments').where('sno', '==', query.toUpperCase()).get()
+      );
+    }
+    // 3. Text Query — uses pre-normalized UPPERCASE fields stored on write.
+    // Only 4 queries (one per field) instead of 16 (4 fields × 4 case variants).
+    // Fields written by POST: _consigneeNameUpper, _consignorNameUpper,
+    //                         _consigneeCityUpper, _consigneeStateUpper
     else {
-      // Run prefix matches on key fields using case variations to support case insensitivity
-      const termVariants = Array.from(new Set([
-        query,
-        query.toUpperCase(),
-        query.toLowerCase(),
-        toTitleCase(query)
-      ]));
-
-      const fields = ['consigneeName', 'consignorName', 'consigneeCity', 'consigneeState'];
+      const term = query.toUpperCase();
+      const fields = [
+        '_consigneeNameUpper',
+        '_consignorNameUpper',
+        '_consigneeCityUpper',
+        '_consigneeStateUpper',
+      ];
 
       for (const field of fields) {
-        for (const variant of termVariants) {
-          // Limit individual queries to 20 for speed and resource limit safety
-          queryPromises.push(
-            adminDb.collection('consignments')
-              .where(field, '>=', variant)
-              .where(field, '<=', variant + '\uf8ff')
-              .limit(20)
-              .get()
-          );
-        }
+        queryPromises.push(
+          adminDb.collection('consignments')
+            .where(field, '>=', term)
+            .where(field, '<=', term + '\uf8ff')
+            .limit(20)
+            .get()
+        );
       }
     }
 

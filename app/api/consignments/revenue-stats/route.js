@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
+import { getCachedRevenue, setCachedRevenue, getCachedRole, setCachedRole } from '../../../../lib/stats-cache';
 
 // Auth helper
 async function authenticate(req) {
@@ -17,9 +18,13 @@ async function authenticate(req) {
 }
 
 async function getUserRole(uid) {
+  const cached = getCachedRole(uid);
+  if (cached) return cached;
   try {
     const userDoc = await adminDb.collection('users').doc(uid).get();
-    return userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+    const role = userDoc.exists ? (userDoc.data().role || 'employee') : 'employee';
+    setCachedRole(uid, role);
+    return role;
   } catch {
     return 'employee';
   }
@@ -54,6 +59,15 @@ export async function GET(req) {
     if (toDate) {
       end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
+    }
+
+    // Check cache before hitting Firestore
+    const cacheKey = `${start.toDateString()}|${end.toDateString()}`;
+    const cachedResult = getCachedRevenue(cacheKey);
+    if (cachedResult) {
+      return NextResponse.json(cachedResult, {
+        headers: { 'Cache-Control': 'private, max-age=600', 'X-Cache': 'HIT' }
+      });
     }
 
     const tsStart = admin.firestore.Timestamp.fromDate(start);
@@ -137,7 +151,7 @@ export async function GET(req) {
 
     const dailyTrendChart = Object.values(dailyTrendMap);
 
-    return NextResponse.json({
+    const responseData = {
       metrics: {
         totalRevenue,
         totalConsignments,
@@ -152,10 +166,13 @@ export async function GET(req) {
         paymentMode: paymentModeChart,
         partner: partnerChart
       }
-    }, {
-      headers: {
-        'Cache-Control': 'private, max-age=30'
-      }
+    };
+
+    // Cache result for 10 minutes
+    setCachedRevenue(cacheKey, responseData);
+
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': 'private, max-age=600', 'X-Cache': 'MISS' }
     });
 
   } catch (err) {
