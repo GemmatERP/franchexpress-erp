@@ -154,7 +154,7 @@ async function seed() {
     ...Array(1).fill('Holding at HUB')
   ];
 
-  const courierPartners = ['SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
+  const courierPartners = ['Franch Express', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
   const paymentModes = ['CASH', 'UPI', 'CREDIT', 'To Pay', 'Debit'];
   const voucherTypes = ['Normal', 'COD', 'To Pay', 'Safety Plus'];
 
