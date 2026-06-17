@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
 import { fetchLiveStatus } from '../../../../lib/tracking';
 import { invalidateStatsCache, getCachedRole, setCachedRole } from '../../../../lib/stats-cache';
+import { sendShipmentNotification } from '../../../../lib/notifications';
 
 // Helper to delay execution (prevent rate limiting issues on FranchExpress server)
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -192,6 +193,20 @@ export async function GET(req) {
             batch.update(doc.ref, updatePayload);
             batchHasWrites = true;
             updatedCount++;
+
+            // Trigger WhatsApp notifications on status change
+            try {
+              await sendShipmentNotification({
+                consigneePhone: data.consigneePhone,
+                consigneeName: data.consigneeName,
+                consignorPhone: data.consignorPhone,
+                consignorName: data.consignorName,
+                awb: awb,
+                status: mappedStatus,
+              });
+            } catch (notifyErr) {
+              console.error(`[Sync Notification Error] AWB ${awb}: ${notifyErr.message}`);
+            }
 
             details.push({
               awb,
