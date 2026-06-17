@@ -30,6 +30,7 @@
 | 14 | Logo Size & Sidebar Polish | ✅ Done |
 | 15 | Profile Icon & Edit Modal | ✅ Done |
 | 16 | Firestore Query Optimization (Phase 16) | ✅ Done |
+| 17 | WhatsApp Notification Integration | ✅ Done |
 
 ---
 
@@ -300,6 +301,25 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 17 — WhatsApp Notification Integration
+
+**Goal**: Automate shipment status notifications to receivers (consignees) and senders (consignors) via Meta's WhatsApp Cloud API.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Created detailed WhatsApp template mapping guide for 8 custom templates (4 delivery statuses × sender+receiver) | ✅ Done |
+| 2 | Implemented `/lib/notifications.js` dispatcher routing status updates to specific templates with normalized international numbers | ✅ Done |
+| 3 | Created `/api/notify` POST route to trigger client notifications with parameter validation | ✅ Done |
+| 4 | Built `/api/whatsapp/webhook` Next.js handler to listen to incoming customer replies, delivery receipts, and address updates | ✅ Done |
+| 5 | Fixed compilation path mapping errors (`firebase-admin` imports in webhook) and verified local build | ✅ Done |
+| 6 | Verified Meta template parameter counts (2 body variables for receiver, 3 for sender) and adjusted API payloads | ✅ Done |
+| 7 | Configured verified WABA ID, Phone ID, and new permanent System User access token locally and on Vercel | ✅ Done |
+| 8 | Created `feature/whatsapp-notifications` branch, committed and merged changes to `main` on GitHub | ✅ Done |
+| 9 | Deployed update to Vercel production under `https://shipments.gemmat.net` | ✅ Done |
+| 10 | Successfully tested live "In Transit" (Shipped) and "Booked" (Processing) message delivery to WhatsApp | ✅ Done |
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -327,6 +347,9 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | `components/dashboard/TodayTable.jsx` | Renamed "voucher" → "consignment" terminology |
 | `lib/tracking.js` | FranchExpress API status code parser |
 | `lib/stats-cache.js` | **[NEW]** Shared cache state module |
+| `lib/notifications.js` | **[NEW]** Dispatcher for status-based WhatsApp template routing |
+| `app/api/notify/route.js` | **[NEW]** POST API endpoint to trigger/send consignment notifications |
+| `app/api/whatsapp/webhook/route.js` | **[NEW]** Webhook route for Meta event subscriptions (status receipts, incoming replies) |
 | `public/Logo-GM-FE.png` | **[NEW]** Company logo for favicon + sidebar |
 | `firestore.rules` | Role-based Firestore security rules |
 
@@ -374,127 +397,22 @@ npx vercel --prod --yes
 
 ---
 
-### 1. 📱 WhatsApp Integration — **IN PROGRESS**
-
-**Priority**: High  
-**Status**: Code rewritten and ready — needs permanent token + approved template
-
-**What's Done**:
-- `lib/notifications.js` — fully rewritten with Meta WhatsApp Cloud API support (`whatsapp` provider)
-- `NOTIFICATION_PROVIDER=whatsapp` already set in `.env.local`
-- Phone number auto-normalized to India (+91) international format
-- Credentials in `.env.local`: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`
-
-**Steps Still Needed**:
-
-#### Step 1 — Get a Permanent System User Token
-1. Go to [Meta Business Manager](https://business.facebook.com/) → **Settings → Users → System Users**
-2. Create a **System User** (if not already exists) with **Admin** role
-3. Click **"Add Assets"** → add your WhatsApp Business Account
-4. Click **"Generate Token"** → select the app → check `whatsapp_business_messaging` & `whatsapp_business_management` permissions
-5. Copy the token → paste in `.env.local` as `WHATSAPP_ACCESS_TOKEN=...`
-6. Also add to **Vercel → Project → Settings → Environment Variables**
-
-#### Step 2 — Create & Submit Message Template
-1. Go to [Meta Business Manager](https://business.facebook.com/) → **WhatsApp → Message Templates**
-2. Click **"Create Template"**
-3. Fill in:
-   - **Name**: `shipment_update` *(must match exactly)*
-   - **Category**: `Utility`
-   - **Language**: `English`
-   - **Body text**:
-     ```
-     Dear {{1}}, your FranchExpress shipment AWB {{2}} has been updated. Current status: {{3}}. For support, call {{4}}. — FranchExpress Team
-     ```
-4. Submit for Meta review (approval usually takes a few minutes to a few hours)
-5. Once status shows **Approved**, WhatsApp messages will start sending
-
-#### Step 3 — Redeploy to Vercel
-```bash
-npx vercel --prod --yes
-```
-
----
-
-### 2. 🔒 npm Audit Vulnerabilities
+### 1. 📱 WhatsApp Template Approval (Meta)
 
 **Priority**: Medium  
-**Status**: Non-blocking — fix when convenient
+**Status**: Awaiting Meta approval for remaining templates
 
-```bash
-cd /Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp
-npm audit       # inspect
-npm audit fix   # safe auto-fix
-```
+**What's Done**:
+* Deployed `/lib/notifications.js` dispatcher routing status updates to specific templates.
+* Deployed `/api/notify` endpoint and webhook handler `/api/whatsapp/webhook`.
+* Configured new permanent System User token (`WHATSAPP_ACCESS_TOKEN`), WABA ID, and Phone ID.
+* Successfully tested and verified live delivery for approved templates (`fe_rcvr_in_transit` and `fe_rcvr_processing`).
 
----
-
-### 3. 🛡️ Firestore Security Rules Deployment
-
-**Priority**: High  
-**Status**: ✅ Firestore **indexes** deployed via CLI — rules still need to be deployed
-
-The `firestore.rules` file exists. Deploy via CLI (already logged in):
-```bash
-cd /Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp
-npx firebase-tools@latest deploy --only firestore:rules --project franchexpress-erp
-```
-
-> ⚠️ Until deployed, Firestore may be using open/default rules.
+**Steps Still Needed**:
+* Await Meta's automated approval on the 5 pending templates: `fe_rcvr_out_delivery`, `fe_rcvr_delivered`, `fe_sndr_in_transit`, `fe_sndr_out_delivery`, and `fe_sndr_delivered`. Once approved, they will start sending immediately without any code edits.
 
 ---
 
-### 4. 📦 GitHub Remote URL Warning (Minor)
-
-**Priority**: Low  
-**Status**: Cosmetic only — pushes still work
-
-```bash
-git remote set-url origin https://github.com/GemmatERP/franchexpress-erp.git
-```
-
----
-
-### 5. 🔐 CRON_SECRET on Vercel
-
-**Priority**: High  
-**Status**: Set in `.env.local` — must also be added to Vercel dashboard
-
-1. Go to **Vercel → franchexpress-erp → Settings → Environment Variables**
-2. Add `SYNC_SECRET` with the same value as in `.env.local`
-3. Also add all `WHATSAPP_*` variables once permanent token is ready
-
----
-
-### 1. 📱 WhatsApp Integration — Permanent System User Token
-
-**Priority**: High  
-**Status**: Partially built — notification code exists but token is expired/temporary
-
-**Background**:  
-The WhatsApp Business API integration was partially implemented in `lib/notifications.js` to send automated shipment status notifications to consignees. A temporary 24-hour access token was used during development, which has likely expired by now.
-
-**What's Working**:
-- `lib/notifications.js` — notification dispatch logic is built
-- `app/api/notify/route.js` — API endpoint accepts `consigneePhone`, `awbNumber`, `consigneeName`, `deliveryStatus`
-- Called automatically when delivery status is updated
-
-**What's Needed**:
-1. Log in to [Meta Business Manager](https://business.facebook.com/) using the business account
-2. Navigate to **WhatsApp → Configuration → System Users**
-3. Create or locate the **System User** (not a personal user)
-4. Generate a **Permanent Token** with `whatsapp_business_messaging` permission
-5. Update `.env.local`:
-   ```env
-   WHATSAPP_TOKEN=your_permanent_system_token_here
-   WHATSAPP_PHONE_ID=your_phone_number_id_here
-   WHATSAPP_BUSINESS_ACCOUNT_ID=your_waba_id_here
-   ```
-6. Redeploy to Vercel and update the environment variables in the Vercel dashboard under **Project → Settings → Environment Variables**
-
-**Important**: Never commit the token to GitHub. The repo is public, so `.env.local` must stay gitignored (it already is).
-
----
 
 ### 2. 🔒 npm Audit Vulnerabilities — 21 Security Issues
 
