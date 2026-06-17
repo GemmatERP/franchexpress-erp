@@ -3,27 +3,40 @@ import { sendShipmentNotification } from '../../../lib/notifications';
 
 export async function POST(req) {
   try {
-    const { consignorPhone, consigneePhone, awbNumber, consigneeName, deliveryStatus } = await req.json();
+    const {
+      consigneePhone,
+      consigneeName,
+      consignorPhone,
+      consignorName,
+      awbNumber,
+      deliveryStatus,
+      // Legacy fields
+      phone,
+      name,
+    } = await req.json();
 
-    if (!consigneePhone || !awbNumber || !consigneeName || !deliveryStatus) {
+    const rcvrPhone = consigneePhone || phone;
+    const rcvrName  = consigneeName  || name;
+
+    if (!rcvrPhone || !awbNumber || !rcvrName || !deliveryStatus) {
       return NextResponse.json(
-        { error: 'Recipient phone, name, status and AWB are required for notification' },
+        { error: 'consigneePhone, consigneeName, awbNumber and deliveryStatus are required' },
         { status: 400 }
       );
     }
 
-    // Trigger notification to the consignee (recipient)
     const result = await sendShipmentNotification({
-      phone: consigneePhone,
-      name: consigneeName,
-      awb: awbNumber,
+      consigneePhone: rcvrPhone,
+      consigneeName:  rcvrName,
+      consignorPhone,
+      consignorName,
+      awb:    awbNumber,
       status: deliveryStatus,
-      type: 'consignee',
     });
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error('API Notification Dispatch Error:', err.message);
+    console.error('Notification Dispatch Error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

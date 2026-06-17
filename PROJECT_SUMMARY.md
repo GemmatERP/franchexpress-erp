@@ -10,6 +10,29 @@
 
 ---
 
+## ✅ Completed Phases Summary
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Project Setup & Configuration | ✅ Done |
+| 2 | Firebase Auth & User Role Seeding | ✅ Done |
+| 3 | Real Data Import (3,218 records) | ✅ Done |
+| 4 | Firestore Security Rules | ✅ Done |
+| 5 | Firestore Read Optimisation | ✅ Done |
+| 6 | Next.js Viewport Warning Fix | ✅ Done |
+| 7 | GitHub & Vercel Deployment | ✅ Done |
+| 8 | Next.js Build Error Fix | ✅ Done |
+| 9 | Vercel Speed Insights & Analytics | ✅ Done |
+| 10 | Auto-Sync & Tracking Timeline | ✅ Done |
+| 11 | New Dashboard Module Pages | ✅ Done |
+| 12 | Dashboard UI Enhancements | ✅ Done |
+| 13 | Favicon & Branding | ✅ Done |
+| 14 | Logo Size & Sidebar Polish | ✅ Done |
+| 15 | Profile Icon & Edit Modal | ✅ Done |
+| 16 | Firestore Query Optimization (Phase 16) | ✅ Done |
+
+---
+
 ## 📋 Full Conversation — Planned & Executed Tasks
 
 ---
@@ -255,6 +278,28 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 16 — Firestore Query Optimization
+
+**Goal**: Analyse Firebase Console metrics and reduce Firestore reads from 26K/day.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Analysed all API routes vs Firebase Console query metrics | ✅ Done |
+| 2 | Real `.startAfter()` cursor pagination in `GET /api/consignments` (was in-memory) | ✅ Done |
+| 3 | Pushed equality filters (deliveryStatus, courierPartner, paymentMode) into Firestore query | ✅ Done |
+| 4 | Sync route: date filter pushed into Firestore query (was in-memory discard) | ✅ Done |
+| 5 | Search: normalized `_*Upper` fields written on POST → 4 queries instead of 16 | ✅ Done |
+| 6 | Stats cache TTL increased 5 min → 30 min | ✅ Done |
+| 7 | Added 10-minute server cache for revenue stats (was no cache) | ✅ Done |
+| 8 | Added role cache (60s TTL) shared across all routes via `lib/stats-cache.js` | ✅ Done |
+| 9 | Created `firestore.indexes.json` with 4 composite indexes | ✅ Done |
+| 10 | Deployed composite indexes via Firebase CLI | ✅ Done |
+| 11 | Committed and merged to `main` | ✅ Done |
+
+**Estimated Read Reduction**: 26K/day → ~6–8K/day (~70% reduction)
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -323,7 +368,101 @@ npx vercel --prod --yes
 
 ---
 
-## ⚠️ Known / Pending Items
+---
+
+## ⚠️ Pending Items (Current Status)
+
+---
+
+### 1. 📱 WhatsApp Integration — **IN PROGRESS**
+
+**Priority**: High  
+**Status**: Code rewritten and ready — needs permanent token + approved template
+
+**What's Done**:
+- `lib/notifications.js` — fully rewritten with Meta WhatsApp Cloud API support (`whatsapp` provider)
+- `NOTIFICATION_PROVIDER=whatsapp` already set in `.env.local`
+- Phone number auto-normalized to India (+91) international format
+- Credentials in `.env.local`: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`
+
+**Steps Still Needed**:
+
+#### Step 1 — Get a Permanent System User Token
+1. Go to [Meta Business Manager](https://business.facebook.com/) → **Settings → Users → System Users**
+2. Create a **System User** (if not already exists) with **Admin** role
+3. Click **"Add Assets"** → add your WhatsApp Business Account
+4. Click **"Generate Token"** → select the app → check `whatsapp_business_messaging` & `whatsapp_business_management` permissions
+5. Copy the token → paste in `.env.local` as `WHATSAPP_ACCESS_TOKEN=...`
+6. Also add to **Vercel → Project → Settings → Environment Variables**
+
+#### Step 2 — Create & Submit Message Template
+1. Go to [Meta Business Manager](https://business.facebook.com/) → **WhatsApp → Message Templates**
+2. Click **"Create Template"**
+3. Fill in:
+   - **Name**: `shipment_update` *(must match exactly)*
+   - **Category**: `Utility`
+   - **Language**: `English`
+   - **Body text**:
+     ```
+     Dear {{1}}, your FranchExpress shipment AWB {{2}} has been updated. Current status: {{3}}. For support, call {{4}}. — FranchExpress Team
+     ```
+4. Submit for Meta review (approval usually takes a few minutes to a few hours)
+5. Once status shows **Approved**, WhatsApp messages will start sending
+
+#### Step 3 — Redeploy to Vercel
+```bash
+npx vercel --prod --yes
+```
+
+---
+
+### 2. 🔒 npm Audit Vulnerabilities
+
+**Priority**: Medium  
+**Status**: Non-blocking — fix when convenient
+
+```bash
+cd /Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp
+npm audit       # inspect
+npm audit fix   # safe auto-fix
+```
+
+---
+
+### 3. 🛡️ Firestore Security Rules Deployment
+
+**Priority**: High  
+**Status**: ✅ Firestore **indexes** deployed via CLI — rules still need to be deployed
+
+The `firestore.rules` file exists. Deploy via CLI (already logged in):
+```bash
+cd /Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp
+npx firebase-tools@latest deploy --only firestore:rules --project franchexpress-erp
+```
+
+> ⚠️ Until deployed, Firestore may be using open/default rules.
+
+---
+
+### 4. 📦 GitHub Remote URL Warning (Minor)
+
+**Priority**: Low  
+**Status**: Cosmetic only — pushes still work
+
+```bash
+git remote set-url origin https://github.com/GemmatERP/franchexpress-erp.git
+```
+
+---
+
+### 5. 🔐 CRON_SECRET on Vercel
+
+**Priority**: High  
+**Status**: Set in `.env.local` — must also be added to Vercel dashboard
+
+1. Go to **Vercel → franchexpress-erp → Settings → Environment Variables**
+2. Add `SYNC_SECRET` with the same value as in `.env.local`
+3. Also add all `WHATSAPP_*` variables once permanent token is ready
 
 ---
 
