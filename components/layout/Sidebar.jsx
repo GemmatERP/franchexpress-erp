@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Search,
   Coins,
-  Package
+  Package,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -65,6 +66,12 @@ export function Sidebar({ className = '' }) {
       href: '/dashboard/reports',
       icon: FileBarChart,
       roles: ['admin', 'employee'],
+    },
+    {
+      label: 'WhatsApp Logs',
+      href: '/dashboard/whatsapp',
+      icon: MessageSquare,
+      roles: ['admin'],
     },
     {
       label: 'Sync Logs',

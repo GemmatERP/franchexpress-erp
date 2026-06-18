@@ -44,6 +44,8 @@ export default function DashboardLayout({ children }) {
       setPageTitle('Reports & Business Intelligence');
     } else if (pathname === '/dashboard/sync') {
       setPageTitle('Scheduled Auto-Sync Logs');
+    } else if (pathname === '/dashboard/whatsapp') {
+      setPageTitle('WhatsApp Messaging Hub');
     } else if (pathname === '/dashboard/search') {
       setPageTitle('Find Consignments');
     } else {

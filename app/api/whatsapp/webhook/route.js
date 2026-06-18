@@ -56,6 +56,12 @@ export async function POST(req) {
             timestamp: new Date(Number(timestamp) * 1000).toISOString(),
             updatedAt: new Date().toISOString(),
           }, { merge: true });
+
+          // Update unified whatsapp_messages
+          await adminDb.collection('whatsapp_messages').doc(messageId).set({
+            status: deliveryStatus,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
         }
       }
 
@@ -67,7 +73,38 @@ export async function POST(req) {
 
         console.log(`[WhatsApp] Incoming ${msgType} from ${from}`);
 
-        // Handle location share (if you add location request button later)
+        let associatedAwb = null;
+        if (adminDb) {
+          try {
+            const rawPhone = from;
+            const tenDigitPhone = from.startsWith('91') ? from.slice(2) : from;
+
+            // Check consigneePhone first
+            let snap = await adminDb.collection('consignments')
+              .where('consigneePhone', 'in', [rawPhone, tenDigitPhone])
+              .orderBy('date', 'desc')
+              .limit(1)
+              .get();
+
+            if (!snap.empty) {
+              associatedAwb = snap.docs[0].data().awbNumber;
+            } else {
+              // Check consignorPhone
+              let snap2 = await adminDb.collection('consignments')
+                .where('consignorPhone', 'in', [rawPhone, tenDigitPhone])
+                .orderBy('date', 'desc')
+                .limit(1)
+                .get();
+              if (!snap2.empty) {
+                associatedAwb = snap2.docs[0].data().awbNumber;
+              }
+            }
+          } catch (err) {
+            console.warn('[Webhook AWB lookup error]:', err.message);
+          }
+        }
+
+        // Handle location share (if customer sends their location)
         if (msgType === 'location') {
           const { latitude, longitude, name: locationName, address } = message.location;
           console.log(`[WhatsApp] Location from ${from}: ${latitude}, ${longitude}`);
@@ -82,6 +119,44 @@ export async function POST(req) {
               address: address || null,
               receivedAt: new Date().toISOString(),
             });
+
+            // If associated AWB exists, update consignment gpsLocation directly
+            if (associatedAwb) {
+              try {
+                const consignSnap = await adminDb.collection('consignments')
+                  .where('awbNumber', '==', associatedAwb)
+                  .limit(1)
+                  .get();
+
+                if (!consignSnap.empty) {
+                  await consignSnap.docs[0].ref.update({
+                    gpsLocation: {
+                      latitude,
+                      longitude,
+                      googleMapsUrl: `https://www.google.com/maps?q=${latitude},${longitude}`,
+                      receivedAt: new Date().toISOString()
+                    },
+                    notes: adminDb.FieldValue ? adminDb.FieldValue.arrayUnion(`Customer sent GPS coordinates via WhatsApp: Lat ${latitude}, Lng ${longitude}`) : [`Customer sent GPS coordinates via WhatsApp: Lat ${latitude}, Lng ${longitude}`]
+                  });
+                }
+              } catch (err) {
+                console.error('[Webhook Consignment GPS update error]:', err.message);
+              }
+            }
+
+            // Save location to unified messages
+            await adminDb.collection('whatsapp_messages').add({
+              direction: 'inbound',
+              senderPhone: from,
+              msgType: 'location',
+              latitude,
+              longitude,
+              body: `Shared location: ${locationName || ''} ${address || ''}`.trim() || 'GPS Coordinates Shared',
+              status: 'received',
+              timestamp: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              awb: associatedAwb || null,
+            });
           }
         }
 
@@ -89,7 +164,20 @@ export async function POST(req) {
         if (msgType === 'text') {
           const text = message.text?.body;
           console.log(`[WhatsApp] Text from ${from}: "${text}"`);
-          // Add auto-reply logic here if needed
+          
+          if (adminDb) {
+            // Save text reply to unified messages
+            await adminDb.collection('whatsapp_messages').add({
+              direction: 'inbound',
+              senderPhone: from,
+              msgType: 'text',
+              body: text || '',
+              status: 'received',
+              timestamp: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              awb: associatedAwb || null,
+            });
+          }
         }
       }
     }
@@ -98,6 +186,5 @@ export async function POST(req) {
   } catch (err) {
     console.error('[WhatsApp Webhook] Error:', err.message);
     return NextResponse.json({ status: 'error', error: err.message }, { status: 200 });
-    // Always return 200 to Meta — otherwise it retries
   }
 }

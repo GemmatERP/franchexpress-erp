@@ -292,6 +292,53 @@ export async function GET(req) {
 
     await adminDb.collection('sync_logs').add(logDoc);
 
+    // Auto-cleanup: delete records older than 30 days to optimize Firestore size
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const cutoffTimestamp = admin.firestore.Timestamp.fromDate(thirtyDaysAgo);
+      const cutoffIsoString = thirtyDaysAgo.toISOString();
+
+      // 1. Clean old sync_logs
+      const oldSyncLogsSnap = await adminDb.collection('sync_logs')
+        .where('timestamp', '<', cutoffTimestamp)
+        .get();
+
+      if (!oldSyncLogsSnap.empty) {
+        const syncBatch = adminDb.batch();
+        oldSyncLogsSnap.docs.forEach(doc => syncBatch.delete(doc.ref));
+        await syncBatch.commit();
+        console.log(`[Cleanup] Deleted ${oldSyncLogsSnap.size} old sync logs.`);
+      }
+
+      // 2. Clean old whatsapp_messages
+      const oldMessagesSnap = await adminDb.collection('whatsapp_messages')
+        .where('timestamp', '<', cutoffIsoString)
+        .get();
+
+      if (!oldMessagesSnap.empty) {
+        const msgBatch = adminDb.batch();
+        oldMessagesSnap.docs.slice(0, 500).forEach(doc => msgBatch.delete(doc.ref));
+        await msgBatch.commit();
+        console.log(`[Cleanup] Deleted ${Math.min(oldMessagesSnap.size, 500)} old WhatsApp messages.`);
+      }
+
+      // 3. Clean old legacy whatsapp_logs
+      const oldLegacyLogsSnap = await adminDb.collection('whatsapp_logs')
+        .where('timestamp', '<', cutoffIsoString)
+        .get();
+
+      if (!oldLegacyLogsSnap.empty) {
+        const legacyBatch = adminDb.batch();
+        oldLegacyLogsSnap.docs.slice(0, 500).forEach(doc => legacyBatch.delete(doc.ref));
+        await legacyBatch.commit();
+        console.log(`[Cleanup] Deleted ${Math.min(oldLegacyLogsSnap.size, 500)} old legacy WhatsApp logs.`);
+      }
+    } catch (cleanupErr) {
+      console.error('[Auto-Cleanup Error]:', cleanupErr.message);
+    }
+
     return NextResponse.json({
       message: 'Automatic sync execution complete',
       processed: pendingCount,
