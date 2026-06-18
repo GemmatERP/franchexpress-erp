@@ -400,16 +400,17 @@ npx vercel --prod --yes
 ### 1. 📱 WhatsApp Template Approval (Meta)
 
 **Priority**: Medium  
-**Status**: Awaiting Meta approval for remaining templates
+**Status**: Awaiting Meta approval for remaining templates; only `fe_rcvr_returned` and `fe_sndr_returned` are created for new statuses
 
 **What's Done**:
 * Deployed `/lib/notifications.js` dispatcher routing status updates to specific templates.
-* Deployed `/api/notify` endpoint and webhook handler `/api/whatsapp/webhook`.
 * Configured new permanent System User token (`WHATSAPP_ACCESS_TOKEN`), WABA ID, and Phone ID.
-* Successfully tested and verified live delivery for approved templates (`fe_rcvr_in_transit` and `fe_rcvr_processing`).
+* Bypassed unneeded status notifications (`Reached Destination`, `Holding at HUB`) in the notification code to prevent sending unwanted notifications or generating errors.
+* Documented the active templates in [docs/whatsapp_templates.md](file:///Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp/docs/whatsapp_templates.md).
 
 **Steps Still Needed**:
-* Await Meta's automated approval on the 5 pending templates: `fe_rcvr_out_delivery`, `fe_rcvr_delivered`, `fe_sndr_in_transit`, `fe_sndr_out_delivery`, and `fe_sndr_delivered`. Once approved, they will start sending immediately without any code edits.
+* Await Meta's automated approval on the pending templates.
+* Once templates are approved by Meta, they will start sending immediately without any code edits.
 
 ---
 
