@@ -316,13 +316,13 @@ export default function ConsignmentsDashboard() {
                         {formatDate(item.date)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-fe-dark">
-                      <div className="font-semibold">{item.consignorName}</div>
-                      <div className="text-[10px] text-fe-gray mt-0.5">{item.consignorCity}</div>
+                    <td className="px-6 py-4 text-fe-dark max-w-[150px]">
+                      <div className="font-semibold truncate" title={item.consignorName}>{item.consignorName}</div>
+                      <div className="text-[10px] text-fe-gray mt-0.5 truncate" title={item.consignorCity}>{item.consignorCity}</div>
                     </td>
-                    <td className="px-6 py-4 text-fe-dark">
-                      <div className="font-semibold">{item.consigneeName}</div>
-                      <div className="text-[10px] text-fe-gray mt-0.5">{item.consigneeCity}, {item.consigneeState}</div>
+                    <td className="px-6 py-4 text-fe-dark max-w-[150px]">
+                      <div className="font-semibold truncate" title={item.consigneeName}>{item.consigneeName}</div>
+                      <div className="text-[10px] text-fe-gray mt-0.5 truncate" title={`${item.consigneeCity}, ${item.consigneeState}`}>{item.consigneeCity}, {item.consigneeState}</div>
                     </td>
                     <td className="px-6 py-4 text-fe-gray">
                       <div className="text-fe-dark font-medium">{item.courierPartner}</div>

@@ -74,24 +74,29 @@ export async function GET(req) {
       }
     }
 
-    // ── Push equality filters into Firestore (composite index required) ──────
-    // This avoids fetching all docs then filtering in JS.
-    // Falls back to in-memory only when multiple inequality filters would conflict.
-    if (deliveryStatus && deliveryStatus !== 'All') {
-      queryRef = queryRef.where('deliveryStatus', '==', deliveryStatus);
-    }
-    if (courierPartner && courierPartner !== 'All') {
-      queryRef = queryRef.where('courierPartner', '==', courierPartner);
-    }
-    if (paymentMode && paymentMode !== 'All') {
-      queryRef = queryRef.where('paymentMode', '==', paymentMode);
+    // ── Firestore equality filter strategy ───────────────────────────────────
+    // Firestore requires a composite index for every unique combination of
+    // equality + range (date) + orderBy fields. Rather than maintaining all
+    // permutations, we push only ONE equality filter to Firestore (whichever
+    // is most selective), and do the remaining filters in-process.
+    // This keeps index requirements minimal (3 single-field indexes) and
+    // never throws "index required" errors for combined filters.
+
+    const activeFilters = [];
+    if (deliveryStatus && deliveryStatus !== 'All') activeFilters.push({ field: 'deliveryStatus', value: deliveryStatus });
+    if (courierPartner  && courierPartner  !== 'All') activeFilters.push({ field: 'courierPartner',  value: courierPartner });
+    if (paymentMode     && paymentMode     !== 'All') activeFilters.push({ field: 'paymentMode',     value: paymentMode });
+
+    // Push only the first active equality filter into Firestore
+    if (activeFilters.length > 0) {
+      const { field, value } = activeFilters[0];
+      queryRef = queryRef.where(field, '==', value);
     }
 
     // Sort by date descending
     queryRef = queryRef.orderBy('date', 'desc');
 
-    // ── Real Firestore cursor-based pagination (.startAfter) ─────────────────
-    // Only reads `pageLimit + 1` docs from the DB instead of the entire window.
+    // ── Cursor-based pagination ──────────────────────────────────────────────
     if (cursor) {
       const cursorDoc = await adminDb.collection('consignments').doc(cursor).get();
       if (cursorDoc.exists) {
@@ -99,10 +104,73 @@ export async function GET(req) {
       }
     }
 
-    // Fetch one extra doc to determine if there is a next page
-    const snapshot = await queryRef.limit(pageLimit + 1).get();
+    // When multiple filters are active we need a larger raw fetch so that
+    // in-process filtering still returns a full page. Fetch up to 5× the page
+    // limit to compensate (capped at 1000 for safety).
+    const rawFetchLimit = activeFilters.length > 1
+      ? Math.min(pageLimit * 10, 1000)
+      : pageLimit + 1;
 
-    const allDocs = snapshot.docs;
+    let snapshot;
+    let fallbackMode = false;
+    try {
+      snapshot = await queryRef.limit(rawFetchLimit).get();
+    } catch (err) {
+      if (err.message.includes('index') || err.message.includes('FAILED_PRECONDITION')) {
+        console.warn('Firestore index not ready. Falling back to in-memory filtering. Error:', err.message);
+        fallbackMode = true;
+
+        let fallbackQueryRef = adminDb.collection('consignments');
+        if (!fromDate && !toDate) {
+          const defaultStart = new Date();
+          defaultStart.setDate(defaultStart.getDate() - 30);
+          defaultStart.setHours(0, 0, 0, 0);
+          fallbackQueryRef = fallbackQueryRef.where('date', '>=', admin.firestore.Timestamp.fromDate(defaultStart));
+        } else {
+          if (fromDate) {
+            const start = new Date(fromDate);
+            start.setHours(0, 0, 0, 0);
+            fallbackQueryRef = fallbackQueryRef.where('date', '>=', admin.firestore.Timestamp.fromDate(start));
+          }
+          if (toDate) {
+            const end = new Date(toDate);
+            end.setHours(23, 59, 59, 999);
+            fallbackQueryRef = fallbackQueryRef.where('date', '<=', admin.firestore.Timestamp.fromDate(end));
+          }
+        }
+        fallbackQueryRef = fallbackQueryRef.orderBy('date', 'desc');
+        snapshot = await fallbackQueryRef.limit(3000).get();
+      } else {
+        throw err;
+      }
+    }
+
+    // ── In-process filtering for remaining equality conditions ────────────────
+    let allDocs = snapshot.docs;
+
+    if (fallbackMode) {
+      if (activeFilters.length > 0) {
+        allDocs = allDocs.filter((doc) => {
+          const d = doc.data();
+          return activeFilters.every(({ field, value }) => d[field] === value);
+        });
+      }
+      if (cursor) {
+        const cursorIndex = allDocs.findIndex((doc) => doc.id === cursor);
+        if (cursorIndex !== -1) {
+          allDocs = allDocs.slice(cursorIndex + 1);
+        }
+      }
+    } else {
+      const remainingFilters = activeFilters.slice(1); // skip the one already in Firestore
+      if (remainingFilters.length > 0) {
+        allDocs = allDocs.filter((doc) => {
+          const d = doc.data();
+          return remainingFilters.every(({ field, value }) => d[field] === value);
+        });
+      }
+    }
+
     const hasMore = allDocs.length > pageLimit;
     const pageDocs = hasMore ? allDocs.slice(0, pageLimit) : allDocs;
     const nextCursor = hasMore ? pageDocs[pageDocs.length - 1].id : null;

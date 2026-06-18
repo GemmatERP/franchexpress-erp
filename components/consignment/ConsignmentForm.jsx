@@ -1,157 +1,203 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash2, Save, ArrowLeft, Send } from 'lucide-react';
+import { Trash2, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
 import { useConsignments } from '../../hooks/useConsignments';
-import { useTracking } from '../../hooks/useTracking';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import { useConsignmentEdit } from '../../lib/ConsignmentEditContext';
 import { ShipmentSection } from './ShipmentSection';
 import { PaymentSection } from './PaymentSection';
 import { ConsignorSection } from './ConsignorSection';
 import { ConsigneeSection } from './ConsigneeSection';
-import { DeliverySection } from './DeliverySection';
-import { TrackingTimeline } from './TrackingTimeline';
+import { DuplicateAwbModal } from './DuplicateAwbModal';
+import { UnsavedChangesModal } from './UnsavedChangesModal';
 import { CopyButton } from './CopyButton';
 import { validatePhone, validatePincode, formatDateForInput } from '../../lib/utils';
 
-export function ConsignmentForm({ initialData = null, id = null }) {
+const INITIAL_FORM = () => ({
+  date: formatDateForInput(new Date()),
+  voucherType: 'Normal',
+  awbNumber: '',
+  courierPartner: 'Franch Express',
+  mode: 'Surface',
+  nature: 'Non Doc',
+  goodsDescription: '',
+  weight: '',
+  volumetricWeight: '',
+
+  paymentMode: 'CASH',
+  paymentDate: formatDateForInput(new Date()),
+  amount: '',
+  coverCharges: '',
+  paidStatus: 'Paid',
+  codProductValue: '',
+  chargeableAmount: '',
+
+  consignorPhone: '',
+  consignorName: '',
+  consignorAddress1: '',
+  consignorAddress2: '',
+  consignorAddress3: '',
+  consignorCity: '',
+  consignorPincode: '',
+  consignorState: 'Tamil Nadu',
+  consignorCountry: 'India',
+
+  consigneePhone: '',
+  consigneeName: '',
+  consigneeAddress1: '',
+  consigneeAddress2: '',
+  consigneeAddress3: '',
+  consigneeCity: '',
+  consigneePincode: '',
+  consigneeState: 'Tamil Nadu',
+  consigneeCountry: 'India',
+
+  // Delivery status defaults to Processing (triggers booking WhatsApp notification)
+  deliveryStatus: 'Processing',
+  deliveredDate: '',
+});
+
+export function ConsignmentForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { createConsignment, updateConsignment, loading: saveLoading } = useConsignments();
-  const { track, trackingData, loading: trackLoading } = useTracking();
+  const { user } = useAuth();
+  const { setEditConsignment } = useConsignmentEdit();
+  const { createConsignment, loading: saveLoading } = useConsignments();
 
-  const [sno, setSno] = useState(initialData?.sno || '');
-  const [formData, setFormData] = useState({
-    date: formatDateForInput(new Date()),
-    voucherType: 'Normal',
-    awbNumber: '',
-    courierPartner: 'Franch Express',
-    podNumber: '',
-    mode: 'Surface',
-    nature: 'Non Doc',
-    goodsDescription: '',
-    weight: '',
-    volumetricWeight: '',
-
-    paymentMode: 'CASH',
-    paymentDate: formatDateForInput(new Date()),
-    amount: '',
-    coverCharges: '',
-    paidStatus: 'Not Paid',
-    codProductValue: '',
-    chargeableAmount: '',
-
-    consignorPhone: '',
-    consignorName: '',
-    consignorAddress1: '',
-    consignorAddress2: '',
-    consignorAddress3: '',
-    consignorCity: '',
-    consignorPincode: '',
-
-    consigneePhone: '',
-    consigneeName: '',
-    consigneeAddress1: '',
-    consigneeAddress2: '',
-    consigneeAddress3: '',
-    consigneeCity: '',
-    consigneePincode: '',
-    consigneeState: 'Tamil Nadu',
-
-    deliveryStatus: 'Transit',
-    deliveredDate: '',
-  });
-
+  const [sno, setSno] = useState('');
+  const [formData, setFormData] = useState(INITIAL_FORM());
   const [errors, setErrors] = useState({});
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notificationPreview, setNotificationPreview] = useState('');
-  const [notificationStatus, setNotificationStatus] = useState(null);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  const [savedItem, setSavedItem] = useState(null);
 
-  // Load initialData when editing
+  // ── Dirty tracking ──────────────────────────────────────────────────────────
+  const [isDirty, setIsDirty] = useState(false);
+  const [showUnsaved, setShowUnsaved] = useState(false);
+  const pendingNavRef = useRef(null); // stores the href to navigate to after discard
+
+  // ── Duplicate AWB guard ─────────────────────────────────────────────────────
+  const [awbDuplicateChecking, setAwbDuplicateChecking] = useState(false);
+  const [isDuplicateAwb, setIsDuplicateAwb] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateId, setDuplicateId] = useState(null);
+
+  // ── Unsaved changes guard: intercept beforeunload ───────────────────────────
   useEffect(() => {
-    if (initialData) {
-      const formatted = { ...initialData };
-      // Format timestamps for HTML inputs
-      if (formatted.date) formatted.date = formatDateForInput(formatted.date);
-      if (formatted.paymentDate) formatted.paymentDate = formatDateForInput(formatted.paymentDate);
-      if (formatted.deliveredDate) formatted.deliveredDate = formatDateForInput(formatted.deliveredDate);
-      
-      setFormData((prev) => ({ ...prev, ...formatted }));
-      setSno(initialData.sno);
-      
-      // Auto track AWB if exists
-      if (initialData.awbNumber) {
-        track(initialData.awbNumber);
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
       }
-    }
-  }, [initialData, track]);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear errors when typing
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
-  };
-
-  const handleClearForm = () => {
-    if (window.confirm('Are you sure you want to clear the entire form?')) {
-      setFormData({
-        date: formatDateForInput(new Date()),
-        voucherType: 'Normal',
-        awbNumber: '',
-        courierPartner: 'Franch Express',
-        podNumber: '',
-        mode: 'Surface',
-        nature: 'Non Doc',
-        goodsDescription: '',
-        weight: '',
-        volumetricWeight: '',
-        paymentMode: 'CASH',
-        paymentDate: formatDateForInput(new Date()),
-        amount: '',
-        coverCharges: '',
-        paidStatus: 'Not Paid',
-        codProductValue: '',
-        chargeableAmount: '',
-        consignorPhone: '',
-        consignorName: '',
-        consignorAddress1: '',
-        consignorAddress2: '',
-        consignorAddress3: '',
-        consignorCity: '',
-        consignorPincode: '',
-        consigneePhone: '',
-        consigneeName: '',
-        consigneeAddress1: '',
-        consigneeAddress2: '',
-        consigneeAddress3: '',
-        consigneeCity: '',
-        consigneePincode: '',
-        consigneeState: 'Tamil Nadu',
-        deliveryStatus: 'Transit',
-        deliveredDate: '',
-      });
-      setErrors({});
+    // If AWB changed, clear duplicate flag
+    if (name === 'awbNumber') {
+      setIsDuplicateAwb(false);
+      setDuplicateId(null);
     }
   };
 
+  // ── Duplicate AWB check (fires on AWB field blur) ───────────────────────────
+  const handleAwbBlur = useCallback(async () => {
+    const awb = formData.awbNumber?.trim();
+    if (!awb || !/^\d+$/.test(awb)) return;
+
+    setAwbDuplicateChecking(true);
+    try {
+      let headers = { 'Content-Type': 'application/json' };
+      if (user) {
+        const token = await user.getIdToken();
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch(`/api/consignments/search?q=${encodeURIComponent(awb)}`, { headers });
+      if (!res.ok) return;
+      const results = await res.json();
+      // Find exact AWB match (search may return partial matches)
+      const exactMatch = Array.isArray(results)
+        ? results.find((r) => r.awbNumber === awb)
+        : null;
+      if (exactMatch) {
+        setIsDuplicateAwb(true);
+        setDuplicateId(exactMatch.id);
+        setShowDuplicateModal(true);
+      } else {
+        setIsDuplicateAwb(false);
+        setDuplicateId(null);
+      }
+    } catch (_) {
+      // Fail silently — don't block the user for a network hiccup
+    } finally {
+      setAwbDuplicateChecking(false);
+    }
+  }, [formData.awbNumber, user]);
+
+  // ── Navigate to existing consignment via edit context ───────────────────────
+  const handleViewExisting = () => {
+    setShowDuplicateModal(false);
+    setEditConsignment(duplicateId);
+    setIsDirty(false);
+    router.push('/dashboard/consignments/edit');
+  };
+
+  // ── Clear form ──────────────────────────────────────────────────────────────
+  const handleClearForm = () => {
+    if (window.confirm('Are you sure you want to clear the entire form?')) {
+      setFormData(INITIAL_FORM());
+      setErrors({});
+      setIsDirty(false);
+      setSno('');
+    }
+  };
+
+  // ── Unsaved changes navigation guard ────────────────────────────────────────
+  const handleNavigateAway = (href) => {
+    if (isDirty) {
+      pendingNavRef.current = href;
+      setShowUnsaved(true);
+    } else {
+      router.push(href);
+    }
+  };
+
+  const handleCopyAndStay = () => {
+    try {
+      const text = JSON.stringify({ sno, ...formData }, null, 2);
+      navigator.clipboard.writeText(text);
+      toast('Form data copied to clipboard', 'success');
+    } catch (_) {
+      toast('Could not access clipboard', 'error');
+    }
+    setShowUnsaved(false);
+  };
+
+  const handleDiscardAndLeave = () => {
+    setIsDirty(false);
+    setShowUnsaved(false);
+    const href = pendingNavRef.current || '/dashboard';
+    pendingNavRef.current = null;
+    router.push(href);
+  };
+
+  // ── Validation ──────────────────────────────────────────────────────────────
   const validate = () => {
     const tempErrors = {};
     if (!formData.date) tempErrors.date = 'Date is required';
     if (!formData.awbNumber) tempErrors.awbNumber = 'AWB Number is required';
-    
-    // Consignor validations
+    else if (!/^\d+$/.test(formData.awbNumber)) tempErrors.awbNumber = 'AWB must be numeric only';
+
     if (!formData.consignorPhone) tempErrors.consignorPhone = 'Sender phone is required';
     else if (!validatePhone(formData.consignorPhone)) tempErrors.consignorPhone = 'Enter a valid 10-digit Indian phone number';
     if (!formData.consignorName) tempErrors.consignorName = 'Sender name is required';
@@ -160,7 +206,6 @@ export function ConsignmentForm({ initialData = null, id = null }) {
     if (!formData.consignorPincode) tempErrors.consignorPincode = 'Sender pincode is required';
     else if (!validatePincode(formData.consignorPincode)) tempErrors.consignorPincode = 'Enter a valid 6-digit PIN code';
 
-    // Consignee validations
     if (!formData.consigneePhone) tempErrors.consigneePhone = 'Recipient phone is required';
     else if (!validatePhone(formData.consigneePhone)) tempErrors.consigneePhone = 'Enter a valid 10-digit Indian phone number';
     if (!formData.consigneeName) tempErrors.consigneeName = 'Recipient name is required';
@@ -174,82 +219,69 @@ export function ConsignmentForm({ initialData = null, id = null }) {
     return Object.keys(tempErrors).length === 0;
   };
 
+  // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = async (e) => {
     e.preventDefault();
+
+    if (isDuplicateAwb) {
+      setShowDuplicateModal(true);
+      return;
+    }
+
     if (!validate()) {
       toast('Please correct the validation errors in the form.', 'error');
-      // Scroll to top or first error
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    // Convert numeric fields from string
+    const chargeableAmount = (Number(formData.amount) || 0) + (Number(formData.coverCharges) || 0);
+
     const submissionData = {
       ...formData,
       amount: formData.amount ? Number(formData.amount) : 0,
       coverCharges: formData.coverCharges ? Number(formData.coverCharges) : 0,
       codProductValue: formData.codProductValue ? Number(formData.codProductValue) : 0,
-      chargeableAmount: formData.chargeableAmount ? Number(formData.chargeableAmount) : 0,
+      chargeableAmount,
       weight: formData.weight ? Number(formData.weight) : 0,
       volumetricWeight: formData.volumetricWeight ? Number(formData.volumetricWeight) : 0,
+      deliveryStatus: 'Processing',
     };
 
     try {
-      let savedDoc;
-      if (id) {
-        savedDoc = await updateConsignment(id, submissionData);
-        toast(`Consignment ${sno} updated successfully`, 'success');
-      } else {
-        savedDoc = await createConsignment(submissionData);
-        setSno(savedDoc.sno);
-        toast(`Consignment ${savedDoc.sno} saved successfully`, 'success');
+      const savedDoc = await createConsignment(submissionData);
+      setSno(savedDoc.sno);
+      setIsDirty(false);
+      toast(`Consignment ${savedDoc.sno} saved successfully`, 'success');
+
+      // Trigger WhatsApp booking notification via /api/notify
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            consignorPhone: savedDoc.consignorPhone,
+            consigneePhone: savedDoc.consigneePhone,
+            awbNumber: savedDoc.awbNumber,
+            consigneeName: savedDoc.consigneeName,
+            consignorName: savedDoc.consignorName,
+            deliveryStatus: 'Processing',
+          }),
+        });
+      } catch (_) {
+        // Notification failure is non-blocking
       }
-      setSavedItem(savedDoc);
 
-      // Fetch tracking timeline
-      track(formData.awbNumber);
-
-      // Fetch notification preview via api/notify
-      fetchNotificationPreview(savedDoc || submissionData);
+      // Ask user: create another or go to dashboard
+      setTimeout(() => {
+        if (window.confirm(`Consignment ${savedDoc.sno} saved!\n\nCreate another consignment?`)) {
+          setFormData(INITIAL_FORM());
+          setSno('');
+        } else {
+          router.push('/dashboard');
+        }
+      }, 300);
     } catch (err) {
       toast(err.message, 'error');
-    }
-  };
-
-  const fetchNotificationPreview = async (item) => {
-    try {
-      const res = await fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          consignorPhone: item.consignorPhone,
-          consigneePhone: item.consigneePhone,
-          awbNumber: item.awbNumber,
-          consigneeName: item.consigneeName,
-          deliveryStatus: item.deliveryStatus,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotificationPreview(data.preview);
-        setNotificationStatus(data);
-        setShowNotificationModal(true);
-      }
-    } catch (error) {
-      console.error('Error fetching notification details:', error);
-    }
-  };
-
-  const handleSendNotification = async () => {
-    setNotificationLoading(true);
-    try {
-      // Notification is triggered during creation, this simulates triggering manually or confirms setting
-      toast(`Notifications successfully dispatched to ${formData.consigneeName}`, 'success');
-      setShowNotificationModal(false);
-    } catch (err) {
-      toast('Failed to trigger notification', 'error');
-    } finally {
-      setNotificationLoading(false);
     }
   };
 
@@ -259,7 +291,7 @@ export function ConsignmentForm({ initialData = null, id = null }) {
       <div className="sticky top-16 z-10 bg-fe-bg py-4 border-b border-fe-muted/10 flex flex-wrap justify-between items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push('/dashboard')}
+          onClick={() => handleNavigateAway('/dashboard')}
           className="inline-flex items-center gap-1 text-xs font-bold text-fe-gray hover:text-fe-dark transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -292,105 +324,59 @@ export function ConsignmentForm({ initialData = null, id = null }) {
         </div>
       </div>
 
-      {/* Main Form Body */}
+      {/* Main Form Body — Section order: Shipment → Consignor → Consignee → Payment */}
       <form onSubmit={handleSave} className="space-y-6 mt-4">
-        {/* Sections */}
         <ShipmentSection
           formData={formData}
           onChange={handleInputChange}
           errors={errors}
           sno={sno}
-        />
-        <PaymentSection
-          formData={formData}
-          onChange={handleInputChange}
-          errors={errors}
+          onAwbBlur={handleAwbBlur}
+          awbDuplicateChecking={awbDuplicateChecking}
+          sectionNumber={1}
         />
         <ConsignorSection
           formData={formData}
           onChange={handleInputChange}
           errors={errors}
+          sectionNumber={2}
         />
         <ConsigneeSection
           formData={formData}
           onChange={handleInputChange}
           errors={errors}
+          sectionNumber={3}
         />
-        <DeliverySection
+        <PaymentSection
           formData={formData}
           onChange={handleInputChange}
           errors={errors}
+          sectionNumber={4}
         />
       </form>
 
-      {/* Tracking display section (if tracked/saved) */}
-      {(trackLoading || trackingData) && (
-        <div className="mt-8">
-          {trackLoading ? (
-            <div className="bg-white border border-fe-muted rounded-xl p-8 flex items-center justify-center">
-              <Spinner size="md" />
-              <span className="text-xs text-fe-gray ml-2">Fetching tracking info...</span>
-            </div>
-          ) : (
-            <TrackingTimeline trackingData={trackingData} />
-          )}
-        </div>
-      )}
+      {/* Duplicate AWB Modal */}
+      <DuplicateAwbModal
+        isOpen={showDuplicateModal}
+        onClose={() => {
+          setShowDuplicateModal(false);
+          // Clear the AWB field so user can enter a different one
+          setFormData((prev) => ({ ...prev, awbNumber: '' }));
+          setIsDuplicateAwb(false);
+          setDuplicateId(null);
+        }}
+        awbNumber={formData.awbNumber}
+        existingId={duplicateId}
+        onViewExisting={handleViewExisting}
+      />
 
-      {/* Notification Preview Modal */}
-      <Modal
-        isOpen={showNotificationModal}
-        onClose={() => setShowNotificationModal(false)}
-        title="Dispatch Notification Alert"
-        size="md"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-fe-dark">
-            Here is a preview of the transactional message routing to the customer:
-          </p>
-
-          <div className="bg-fe-bg p-4 rounded-xl border border-fe-muted/30 font-mono text-xs text-fe-dark leading-relaxed">
-            {notificationPreview}
-          </div>
-
-          <div className="flex gap-4 text-[11px] font-sans text-fe-gray">
-            <div>
-              <span className="font-bold text-fe-dark">Channel:</span> {notificationStatus?.channel?.toUpperCase() || 'SMS'}
-            </div>
-            <div>
-              <span className="font-bold text-fe-dark">Recipient:</span> {formData.consigneePhone}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-fe-muted/10">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowNotificationModal(false);
-                // Redirect choice
-                if (!id) {
-                  if (confirm('Create another consignment?')) {
-                    router.refresh();
-                  } else {
-                    router.push('/dashboard');
-                  }
-                }
-              }}
-            >
-              Skip
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSendNotification}
-              loading={notificationLoading}
-              className="flex items-center gap-1.5"
-            >
-              <Send className="h-4 w-4" />
-              Send Alert
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* Unsaved Changes Modal */}
+      <UnsavedChangesModal
+        isOpen={showUnsaved}
+        onClose={() => setShowUnsaved(false)}
+        onCopyAndStay={handleCopyAndStay}
+        onDiscard={handleDiscardAndLeave}
+      />
     </div>
   );
 }

@@ -95,7 +95,10 @@ export function useConsignments() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
   const [hasMore, setHasMore]   = useState(false);
+  const hasMoreRef              = useRef(false);
   const cursorRef               = useRef(null); // stores nextCursor between pages
+
+  const getHasMore = useCallback(() => hasMoreRef.current, []);
 
   const getHeaders = useCallback(async () => {
     if (!user) return {};
@@ -179,10 +182,16 @@ export function useConsignments() {
 
       const json = await res.json();
       // Handle both legacy array response and new paginated response
-      if (Array.isArray(json)) { setHasMore(false); return json; }
+      if (Array.isArray(json)) { 
+        setHasMore(false); 
+        hasMoreRef.current = false;
+        return json; 
+      }
 
       cursorRef.current = json.nextCursor ?? null;
-      setHasMore(json.hasMore ?? false);
+      const nextHasMore = json.hasMore ?? false;
+      setHasMore(nextHasMore);
+      hasMoreRef.current = nextHasMore;
       return json.data ?? [];
     } catch (err) {
       setError(err.message);
@@ -313,6 +322,7 @@ export function useConsignments() {
 
   return {
     loading, error, hasMore,
+    getHasMore,
     fetchDashboardStats,
     fetchConsignments,
     loadMoreConsignments,

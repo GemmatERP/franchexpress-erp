@@ -2,6 +2,7 @@ import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '../lib/auth-context';
 import { ToastProvider } from '../hooks/useToast';
+import { ConsignmentEditProvider } from '../lib/ConsignmentEditContext';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
 
@@ -53,9 +54,11 @@ export default function RootLayout({ children }) {
           Skip to main content
         </a>
         <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <ConsignmentEditProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </ConsignmentEditProvider>
         </AuthProvider>
         <SpeedInsights />
         <Analytics />

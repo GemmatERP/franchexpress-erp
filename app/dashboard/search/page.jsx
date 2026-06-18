@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
 import { useTracking } from '../../../hooks/useTracking';
+import { useConsignmentEdit } from '../../../lib/ConsignmentEditContext';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
@@ -28,6 +29,7 @@ export default function SearchPage() {
   const router = useRouter();
   const { user, role, loading: authLoading, getHeaders } = useAuth();
   const { toast } = useToast();
+  const { setEditConsignment } = useConsignmentEdit();
   
   // Tracking hook
   const { track, trackingData, loading: trackLoading } = useTracking();
@@ -97,7 +99,8 @@ export default function SearchPage() {
   };
 
   const handleEdit = (id) => {
-    router.push(`/dashboard/consignments/new?edit=${id}`);
+    setEditConsignment(id);
+    router.push('/dashboard/consignments/edit');
   };
 
   if (authLoading || (role !== 'admin' && role !== 'employee')) {

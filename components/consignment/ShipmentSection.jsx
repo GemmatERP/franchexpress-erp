@@ -2,17 +2,31 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Package } from 'lucide-react';
+import { ChevronDown, Package, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 
-export function ShipmentSection({ formData, onChange, errors, sno }) {
+export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, awbDuplicateChecking, sectionNumber = 1 }) {
   const [isOpen, setIsOpen] = useState(true);
 
   const toggleSection = () => setIsOpen(!isOpen);
 
-  const courierOptions = ['Franch Express', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
+  const courierOptions = [
+    'Franch Express', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC',
+    'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'
+  ];
   const voucherOptions = ['Normal', 'COD', 'To Pay', 'Safety Plus'];
+
+  // Only allow numeric keypresses on AWB field
+  const handleAwbKeyDown = (e) => {
+    const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'];
+    if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // Today's date as YYYY-MM-DD for the disabled booking date field
+  const todayStr = new Date().toISOString().split('T')[0];
 
   return (
     <div className="border border-fe-muted rounded-xl bg-white overflow-hidden shadow-sm">
@@ -29,7 +43,7 @@ export function ShipmentSection({ formData, onChange, errors, sno }) {
           </div>
           <div className="text-left">
             <h3 className="text-sm font-bold text-fe-dark font-heading">
-              1. Shipment Info
+              {sectionNumber}. Shipment Info
             </h3>
             <p className="text-[10px] text-fe-gray font-sans">
               Booking details, AWB, Courier tracking parameters
@@ -63,16 +77,21 @@ export function ShipmentSection({ formData, onChange, errors, sno }) {
                 disabled
               />
 
-              {/* Date */}
-              <Input
-                label="Booking Date"
-                name="date"
-                type="date"
-                value={formData.date}
-                onChange={onChange}
-                error={errors.date}
-                required
-              />
+              {/* Date — auto-filled, disabled. User cannot change booking date. */}
+              <div className="flex flex-col gap-1.5 w-full">
+                <label className="text-xs font-semibold text-fe-dark font-sans">
+                  Booking Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date || todayStr}
+                  readOnly
+                  disabled
+                  className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-fe-bg text-fe-gray text-xs font-sans cursor-not-allowed opacity-70"
+                />
+                <p className="text-[10px] text-fe-gray font-sans">Auto-set to today</p>
+              </div>
 
               {/* Voucher Type */}
               <Select
@@ -85,16 +104,43 @@ export function ShipmentSection({ formData, onChange, errors, sno }) {
                 required
               />
 
-              {/* AWB Number */}
-              <Input
-                label="AWB Number"
-                name="awbNumber"
-                placeholder="Enter AWB code"
-                value={formData.awbNumber}
-                onChange={onChange}
-                error={errors.awbNumber}
-                required
-              />
+              {/* AWB Number — numeric only */}
+              <div className="flex flex-col gap-1.5 w-full">
+                <label className="text-xs font-semibold text-fe-dark font-sans">
+                  AWB Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="awbNumber"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Enter numeric AWB code"
+                    value={formData.awbNumber}
+                    onChange={onChange}
+                    onKeyDown={handleAwbKeyDown}
+                    onBlur={onAwbBlur}
+                    className={`h-[42px] w-full px-3 py-2 rounded-lg border text-xs font-sans font-mono transition-all focus:outline-none focus:ring-1 ${
+                      errors.awbNumber
+                        ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                        : 'border-fe-muted bg-white focus:border-fe-teal focus:ring-fe-teal'
+                    } ${awbDuplicateChecking ? 'opacity-70' : ''}`}
+                    aria-invalid={!!errors.awbNumber}
+                    aria-describedby={errors.awbNumber ? 'awb-error' : undefined}
+                  />
+                  {awbDuplicateChecking && (
+                    <span className="absolute inset-y-0 right-2 flex items-center">
+                      <span className="h-3.5 w-3.5 border-2 border-fe-teal border-t-transparent rounded-full animate-spin" />
+                    </span>
+                  )}
+                </div>
+                {errors.awbNumber && (
+                  <p id="awb-error" className="flex items-center gap-1 text-[11px] text-red-500 font-sans">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    {errors.awbNumber}
+                  </p>
+                )}
+              </div>
 
               {/* Courier Partner */}
               <Select
@@ -105,16 +151,6 @@ export function ShipmentSection({ formData, onChange, errors, sno }) {
                 options={courierOptions}
                 error={errors.courierPartner}
                 required
-              />
-
-              {/* POD Number */}
-              <Input
-                label="POD Number"
-                name="podNumber"
-                placeholder="Enter POD reference"
-                value={formData.podNumber}
-                onChange={onChange}
-                error={errors.podNumber}
               />
 
               {/* Mode Toggle (Air / Surface) */}

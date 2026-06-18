@@ -52,7 +52,7 @@ export function ReportsTable({ consignments = [], onEdit, onDelete }) {
                   <td className="px-6 py-3.5 text-xs text-fe-dark font-sans whitespace-nowrap">{formatDate(item.date)}</td>
                   <td className="px-6 py-3.5 text-xs text-fe-dark font-mono font-medium">{item.awbNumber}</td>
                   <td className="px-6 py-3.5 text-xs text-fe-dark font-sans">{item.courierPartner}</td>
-                  <td className="px-6 py-3.5 text-xs text-fe-dark font-sans font-medium whitespace-nowrap">{item.consigneeName}</td>
+                  <td className="px-6 py-3.5 text-xs text-fe-dark font-sans font-medium max-w-[150px] truncate" title={item.consigneeName}>{item.consigneeName}</td>
                   <td className="px-6 py-3.5 text-xs text-fe-gray font-sans">{item.consigneeCity}</td>
                   <td className="px-6 py-3.5 text-xs text-fe-gray font-sans whitespace-nowrap">{item.consigneeState}</td>
                   <td className="px-6 py-3.5 text-xs font-sans">

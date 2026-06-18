@@ -31,6 +31,8 @@
 | 15 | Profile Icon & Edit Modal | ✅ Done |
 | 16 | Firestore Query Optimization (Phase 16) | ✅ Done |
 | 17 | WhatsApp Notification Integration | ✅ Done |
+| 18 | New Consignment Page Revamp & Edit Separation | ✅ Done |
+| 19 | Post-Revamp Follow-up Bug Fixes & Query Fallbacks | ✅ Done |
 
 ---
 
@@ -320,6 +322,38 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 18 — New Consignment Page Revamp & Edit Separation
+
+**Goal**: Revamp the consignment booking form to streamline data entry, enforce validations, prevent duplicate AWB entries, and separate edit flows into a dedicated page layout.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Modified `ShipmentSection` to remove `podNumber`, disable the date picker (auto-filled with today's date), and restrict AWB to numbers-only input | ✅ Done |
+| 2 | Revamped `PaymentSection` with conditional logic (COD, payment date, chargeable amount auto-calculation, locked paid status for Cash/UPI) | ✅ Done |
+| 3 | Added `consignorState` and `consignorCountry` / `consigneeCountry` fields in sender/recipient sections | ✅ Done |
+| 4 | Created `DuplicateAwbModal` to prevent submitting duplicate entries and allow clicking "View & Edit Existing" | ✅ Done |
+| 5 | Created `UnsavedChangesModal` to prompt users before navigating away from a dirty form, with a "Copy Form Data" utility | ✅ Done |
+| 6 | Extracted edit flow to dedicated `/dashboard/consignments/edit` route with mixed editable and read-only layouts | ✅ Done |
+| 7 | Wired `ConsignmentEditContext` in `app/layout.jsx` to pass records securely via state and fallback to `sessionStorage` | ✅ Done |
+| 8 | Updated Edit buttons in `[id]/page.jsx`, `search/page.jsx`, and `reports/page.jsx` to use the new edit context routing | ✅ Done |
+| 9 | Reordered and renamed sidebar navigation items (Dashboard, New Consignment, Revenue, Search Consignments, Consignments View, Delivery View, Reports, Sync Logs) | ✅ Done |
+
+---
+
+### ✅ PHASE 19 — Post-Revamp Follow-up Bug Fixes & Query Fallbacks
+
+**Goal**: Fix manual testing bugs related to Firestore index building states, direct URL refresh redirects, pagination failures on export, and UI horizontal scrollbar issues.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Removed unnecessary date single-field index from `firestore.indexes.json` and successfully deployed composite indexes to active Firebase project | ✅ Done |
+| 2 | Added inline `FAILED_PRECONDITION` catch-and-fallback logic in `/api/consignments` list route and `/api/consignments/sync` route to use date-only queries and filter in-memory when indexes are building or missing | ✅ Done |
+| 3 | Fixed race condition redirect in `edit/page.jsx` by falling back to `sessionStorage` directly on mount during hydration | ✅ Done |
+| 4 | Replaced async state checking and brittle page-size pagination checks in reports page `handleLoadAll` with a synchronous `getHasMore` getter ref, resolving the 50-record export truncation bug | ✅ Done |
+| 5 | Applied CSS truncation classes and hover titles to consignee/consignor name cells in Reports Table and Consignments Dashboard to eliminate horizontal scrollbars | ✅ Done |
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -352,6 +386,12 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | `app/api/whatsapp/webhook/route.js` | **[NEW]** Webhook route for Meta event subscriptions (status receipts, incoming replies) |
 | `public/Logo-GM-FE.png` | **[NEW]** Company logo for favicon + sidebar |
 | `firestore.rules` | Role-based Firestore security rules |
+| `app/dashboard/consignments/edit/page.jsx` | **[NEW]** Dedicated edit consignment page with mixed editable/static layout |
+| `components/consignment/DuplicateAwbModal.jsx` | **[NEW]** Modal preventing duplicate AWB entries with view details navigation |
+| `components/consignment/UnsavedChangesModal.jsx` | **[NEW]** Modal guarding unsaved form edits, supporting clipboard copies |
+| `components/consignment/EditShipmentSection.jsx` | **[NEW]** Split editable and read-only form elements for editing |
+| `components/consignment/EditReadOnlySection.jsx` | **[NEW]** Pure visual read-only summary for consignor and consignee blocks |
+| `lib/ConsignmentEditContext.jsx` | **[NEW]** React Context keeping in-memory and sessionStorage backup of active edit IDs |
 
 ---
 

@@ -19,6 +19,7 @@ import {
 import { useConsignments } from '../../../../hooks/useConsignments';
 import { useTracking } from '../../../../hooks/useTracking';
 import { useToast } from '../../../../hooks/useToast';
+import { useConsignmentEdit } from '../../../../lib/ConsignmentEditContext';
 import { Card } from '../../../../components/ui/Card';
 import { Button } from '../../../../components/ui/Button';
 import { Spinner } from '../../../../components/ui/Spinner';
@@ -32,6 +33,7 @@ export default function ConsignmentDetailPage({ params }) {
   const { toast } = useToast();
   const { getConsignment, loading: consignmentLoading } = useConsignments();
   const { track, trackingData, loading: trackLoading } = useTracking();
+  const { setEditConsignment } = useConsignmentEdit();
 
   const [consignment, setConsignment] = useState(null);
 
@@ -102,7 +104,10 @@ export default function ConsignmentDetailPage({ params }) {
           </Button>
           <Button
             variant="primary"
-            onClick={() => router.push(`/dashboard/consignments/new?edit=${consignment.id}`)}
+            onClick={() => {
+              setEditConsignment(consignment.id);
+              router.push('/dashboard/consignments/edit');
+            }}
             className="flex items-center gap-1.5 text-xs font-semibold"
           >
             <Edit3 className="h-4 w-4" />

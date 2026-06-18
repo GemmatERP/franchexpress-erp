@@ -75,13 +75,37 @@ export async function GET(req) {
     // ── Optimized: date filter pushed into Firestore, not in-memory ──────────
     // Composite index required: (deliveryStatus ASC, date ASC)
     // This avoids fetching all pending docs across all time then discarding old ones.
-    const consignmentsSnap = await adminDb.collection('consignments')
-      .where('deliveryStatus', 'in', ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
-      .where('date', '>=', ts60)
-      .orderBy('date', 'desc')
-      .get();
-
-    const filteredDocs = consignmentsSnap.docs;
+    let filteredDocs;
+    try {
+      const consignmentsSnap = await adminDb.collection('consignments')
+        .where('deliveryStatus', 'in', ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
+        .where('date', '>=', ts60)
+        .orderBy('date', 'desc')
+        .get();
+      filteredDocs = consignmentsSnap.docs;
+    } catch (err) {
+      if (err.message.includes('index') || err.message.includes('FAILED_PRECONDITION')) {
+        console.warn('Sync composite index not ready. Querying pending docs and filtering in-memory.');
+        // Fallback: Query all pending status codes (standard single-field index)
+        const allPending = await adminDb.collection('consignments')
+          .where('deliveryStatus', 'in', ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
+          .get();
+        // Filter and sort in-memory
+        const threshold = sixtyDaysAgo.getTime();
+        filteredDocs = allPending.docs.filter((doc) => {
+          const d = doc.data();
+          const t = d.date?.toDate?.()?.getTime() ?? new Date(d.date).getTime();
+          return t >= threshold;
+        });
+        filteredDocs.sort((a, b) => {
+          const at = a.data().date?.toDate?.()?.getTime() ?? new Date(a.data().date).getTime();
+          const bt = b.data().date?.toDate?.()?.getTime() ?? new Date(b.data().date).getTime();
+          return bt - at;
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const pendingCount = filteredDocs.length;
     

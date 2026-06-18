@@ -1,27 +1,51 @@
 {
   "indexes": [
+
     {
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" },
-        { "fieldPath": "deliveryStatus", "order": "ASCENDING" }
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "courierPartner", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" },
-        { "fieldPath": "courierPartner", "order": "ASCENDING" }
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "consignments",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "paymentMode", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" },
-        { "fieldPath": "paymentMode", "order": "ASCENDING" }
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courierPartner", "order": "ASCENDING" },
+        { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courierPartner", "order": "ASCENDING" },
+        { "fieldPath": "paymentMode", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     },
     {
@@ -29,7 +53,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
+        { "fieldPath": "paymentMode", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courierPartner", "order": "ASCENDING" },
+        { "fieldPath": "deliveryStatus", "order": "ASCENDING" },
+        { "fieldPath": "paymentMode", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     }
   ],

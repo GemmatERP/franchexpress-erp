@@ -5,8 +5,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, UserCheck } from 'lucide-react';
 import { Input } from '../ui/Input';
 
-export function ConsignorSection({ formData, onChange, errors }) {
-  const [isOpen, setIsOpen] = useState(false);
+const INDIA_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
+export function ConsignorSection({ formData, onChange, errors, sectionNumber = 2 }) {
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleSection = () => setIsOpen(!isOpen);
 
@@ -25,7 +35,7 @@ export function ConsignorSection({ formData, onChange, errors }) {
           </div>
           <div className="text-left">
             <h3 className="text-sm font-bold text-fe-dark font-heading">
-              3. Consignor Details (Sender)
+              {sectionNumber}. Consignor Details (Sender)
             </h3>
             <p className="text-[10px] text-fe-gray font-sans">
               Sender name, contact, originating branch and address
@@ -125,6 +135,36 @@ export function ConsignorSection({ formData, onChange, errors }) {
                 onChange={onChange}
                 error={errors.consignorPincode}
                 required
+              />
+
+              {/* State */}
+              <div className="flex flex-col gap-1.5 w-full">
+                <label className="text-xs font-semibold text-fe-dark font-sans">
+                  State <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="consignorState"
+                  value={formData.consignorState || 'Tamil Nadu'}
+                  onChange={onChange}
+                  className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-white text-fe-dark text-xs font-sans focus:border-fe-teal focus:ring-1 focus:ring-fe-teal focus:outline-none transition-all"
+                >
+                  {INDIA_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {errors.consignorState && (
+                  <p className="text-[11px] text-red-500 font-sans">{errors.consignorState}</p>
+                )}
+              </div>
+
+              {/* Country */}
+              <Input
+                label="Country"
+                name="consignorCountry"
+                placeholder="Country"
+                value={formData.consignorCountry || 'India'}
+                onChange={onChange}
+                error={errors.consignorCountry}
               />
             </div>
           </motion.div>

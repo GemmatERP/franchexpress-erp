@@ -31,15 +31,27 @@ export function Sidebar({ className = '' }) {
       roles: ['admin', 'employee'],
     },
     {
-      label: 'Consignments',
-      href: '/dashboard/consignments',
-      icon: Package,
-      roles: ['admin', 'employee'],
-    },
-    {
       label: 'New Consignment',
       href: '/dashboard/consignments/new',
       icon: PackagePlus,
+      roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Revenue',
+      href: '/dashboard/revenue',
+      icon: Coins,
+      roles: ['admin'],
+    },
+    {
+      label: 'Search Consignments',
+      href: '/dashboard/search',
+      icon: Search,
+      roles: ['admin', 'employee'],
+    },
+    {
+      label: 'Consignments View',
+      href: '/dashboard/consignments',
+      icon: Package,
       roles: ['admin', 'employee'],
     },
     {
@@ -53,18 +65,6 @@ export function Sidebar({ className = '' }) {
       href: '/dashboard/reports',
       icon: FileBarChart,
       roles: ['admin', 'employee'],
-    },
-    {
-      label: 'Search Consignments',
-      href: '/dashboard/search',
-      icon: Search,
-      roles: ['admin', 'employee'],
-    },
-    {
-      label: 'Revenue',
-      href: '/dashboard/revenue',
-      icon: Coins,
-      roles: ['admin'],
     },
     {
       label: 'Sync Logs',

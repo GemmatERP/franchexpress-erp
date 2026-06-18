@@ -5,8 +5,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, UserPlus } from 'lucide-react';
 import { Input } from '../ui/Input';
 
-export function ConsigneeSection({ formData, onChange, errors }) {
-  const [isOpen, setIsOpen] = useState(false);
+const INDIA_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
+export function ConsigneeSection({ formData, onChange, errors, sectionNumber = 3 }) {
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleSection = () => setIsOpen(!isOpen);
 
@@ -25,7 +35,7 @@ export function ConsigneeSection({ formData, onChange, errors }) {
           </div>
           <div className="text-left">
             <h3 className="text-sm font-bold text-fe-dark font-heading">
-              4. Consignee Details (Recipient)
+              {sectionNumber}. Consignee Details (Recipient)
             </h3>
             <p className="text-[10px] text-fe-gray font-sans">
               Recipient name, contact, destination city and address
@@ -128,14 +138,33 @@ export function ConsigneeSection({ formData, onChange, errors }) {
               />
 
               {/* State */}
+              <div className="flex flex-col gap-1.5 w-full">
+                <label className="text-xs font-semibold text-fe-dark font-sans">
+                  State <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="consigneeState"
+                  value={formData.consigneeState || 'Tamil Nadu'}
+                  onChange={onChange}
+                  className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-white text-fe-dark text-xs font-sans focus:border-fe-teal focus:ring-1 focus:ring-fe-teal focus:outline-none transition-all"
+                >
+                  {INDIA_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {errors.consigneeState && (
+                  <p className="text-[11px] text-red-500 font-sans">{errors.consigneeState}</p>
+                )}
+              </div>
+
+              {/* Country */}
               <Input
-                label="State"
-                name="consigneeState"
-                placeholder="Recipient state (e.g. Tamil Nadu)"
-                value={formData.consigneeState}
+                label="Country"
+                name="consigneeCountry"
+                placeholder="Country"
+                value={formData.consigneeCountry || 'India'}
                 onChange={onChange}
-                error={errors.consigneeState}
-                required
+                error={errors.consigneeCountry}
               />
             </div>
           </motion.div>
