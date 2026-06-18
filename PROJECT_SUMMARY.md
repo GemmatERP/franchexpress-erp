@@ -354,6 +354,23 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 20 — WhatsApp Messaging Hub & Inbound Reply Auditing
+
+**Goal**: Implement a unified WhatsApp Communication Center with outbound log recording, webhook reply and GPS location tracking, search & filters, and database storage auto-cleanup.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Updated `lib/notifications.js` to log outbound sent/failed notifications to `whatsapp_messages` collection | ✅ Done |
+| 2 | Updated `app/api/whatsapp/webhook/route.js` to sync delivery receipts and log incoming text replies or location shares | ✅ Done |
+| 3 | Added AWB lookups in webhook to automatically link customer replies back to active consignments | ✅ Done |
+| 4 | Created secure backend API `app/api/whatsapp/messages/route.js` to fetch recent communications with in-memory query filters | ✅ Done |
+| 5 | Created premium frontend console `app/dashboard/whatsapp/page.jsx` with KPIs, toolbar filter inputs, feed, and Google Maps links | ✅ Done |
+| 6 | Added "WhatsApp Logs" menu items in sidebar layout and mapped route titles | ✅ Done |
+| 7 | Added automatic 30-day database cleanup deletion inside `/api/consignments/sync` route to optimize Firestore storage footprint | ✅ Done |
+| 8 | Compiled, verified local build, and pushed/merged changes to GitHub repository | ✅ Done |
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -368,22 +385,24 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | `app/dashboard/sync/page.jsx` | **[NEW]** Sync logs admin page with manual trigger |
 | `app/api/consignments/route.js` | 30-day default, cursor pagination, `force-dynamic` |
 | `app/api/consignments/stats/route.js` | Stats API with `count()` aggregations + 5-min cache |
-| `app/api/consignments/sync/route.js` | **[NEW]** Cron-triggered bulk tracking sync (CRON_SECRET protected) |
+| `app/api/consignments/sync/route.js` | Cron-triggered bulk tracking sync (CRON_SECRET protected); integrated 30-day auto-cleanup database optimizer |
 | `app/api/consignments/search/route.js` | **[NEW]** Multi-field consignment search API |
 | `app/api/consignments/revenue-stats/route.js` | **[NEW]** Revenue analytics data API |
 | `app/api/sync-logs/route.js` | **[NEW]** Sync execution log reader API |
 | `app/login/page.jsx` | Updated logo sizing; removed redundant subtext |
-| `components/layout/Sidebar.jsx` | Removed brand text; fixed logo to `h-12`; new nav links |
-| `components/layout/MobileDrawer.jsx` | Removed brand text; fixed logo to `h-12`; new nav links |
+| `components/layout/Sidebar.jsx` | Removed brand text; fixed logo to `h-12`; added WhatsApp Logs nav link |
+| `components/layout/MobileDrawer.jsx` | Removed brand text; fixed logo to `h-12`; added WhatsApp Logs nav link |
 | `components/layout/TopBar.jsx` | Replaced user text with clickable avatar + `ProfileModal` |
 | `components/consignment/TrackingTimeline.jsx` | **[NEW]** Rich delivery status timeline component |
 | `components/dashboard/DashboardCharts.jsx` | Chart visual improvements |
 | `components/dashboard/TodayTable.jsx` | Renamed "voucher" → "consignment" terminology |
 | `lib/tracking.js` | FranchExpress API status code parser |
 | `lib/stats-cache.js` | **[NEW]** Shared cache state module |
-| `lib/notifications.js` | **[NEW]** Dispatcher for status-based WhatsApp template routing |
+| `lib/notifications.js` | Dispatcher for WhatsApp notifications; logs outbound dispatches to `whatsapp_messages` collection |
 | `app/api/notify/route.js` | **[NEW]** POST API endpoint to trigger/send consignment notifications |
-| `app/api/whatsapp/webhook/route.js` | **[NEW]** Webhook route for Meta event subscriptions (status receipts, incoming replies) |
+| `app/api/whatsapp/webhook/route.js` | Webhook route for Meta subscriptions; updated to sync delivery status and log text/location replies |
+| `app/api/whatsapp/messages/route.js` | **[NEW]** Admin API endpoint to fetch and filter WhatsApp dispatches and replies |
+| `app/dashboard/whatsapp/page.jsx` | **[NEW]** WhatsApp Logs page showing metrics, search/filters, and chronological messages feed |
 | `public/Logo-GM-FE.png` | **[NEW]** Company logo for favicon + sidebar |
 | `firestore.rules` | Role-based Firestore security rules |
 | `app/dashboard/consignments/edit/page.jsx` | **[NEW]** Dedicated edit consignment page with mixed editable/static layout |
