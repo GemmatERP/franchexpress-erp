@@ -165,14 +165,31 @@ export async function POST(req) {
           const interactive = message.interactive;
           if (interactive?.type === 'nfm_reply' && interactive?.nfm_reply) {
             const nfmReply = interactive.nfm_reply;
-            let bodyText = `[Flow Response: ${nfmReply.body || 'Feedback Submitted'}]`;
+            let bodyText = `📝 Customer Rating Feedback`;
             let responseData = {};
             try {
               responseData = JSON.parse(nfmReply.response_json || '{}');
-              const lines = Object.entries(responseData).map(([key, val]) => {
+              const lines = [];
+
+              if (responseData.screen_0_choose_one_0 !== undefined) {
+                let val = String(responseData.screen_0_choose_one_0);
+                val = val.replace(/^\d+_/, ''); // Strip numeric prefix (e.g. "0_Yes" -> "Yes")
+                lines.push(`Feedback: ${val}`);
+              }
+
+              if (responseData.screen_0_leave_a_1 !== undefined) {
+                lines.push(`Comments: ${responseData.screen_0_leave_a_1}`);
+              }
+
+              // Fallback for any other custom keys (excluding flow_token)
+              Object.entries(responseData).forEach(([key, val]) => {
+                if (key === 'screen_0_choose_one_0' || key === 'screen_0_leave_a_1' || key === 'flow_token') {
+                  return;
+                }
                 const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                return `${label}: ${val}`;
+                lines.push(`${label}: ${val}`);
               });
+
               if (lines.length > 0) {
                 bodyText += '\n' + lines.join('\n');
               }
