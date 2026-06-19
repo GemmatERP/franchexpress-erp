@@ -15,6 +15,7 @@ import {
   LineChart,
   Line,
   CartesianGrid,
+  Label,
 } from 'recharts';
 import { Card } from '../ui/Card';
 
@@ -72,9 +73,13 @@ export function DashboardCharts({ volumeData = [], statusData = [] }) {
               <EmptyChartState message="No volume data recorded in the last 7 days." />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <BarChart data={volumeData} margin={{ top: 10, right: 10, left: 5, bottom: 5 }}>
+                  <XAxis dataKey="name" tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} height={40}>
+                    <Label value="Date" position="insideBottom" offset={0} fill="#9DA5A2" fontSize={11} fontWeight={500} />
+                  </XAxis>
+                  <YAxis tick={{ fill: '#9DA5A2', fontSize: 11 }} axisLine={false} tickLine={false} width={45}>
+                    <Label value="Consignments" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fill: '#9DA5A2', fontSize: 11, fontWeight: 500 }} />
+                  </YAxis>
                   <Tooltip
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E0E4D6' }}
                     labelStyle={{ fontWeight: 'bold', color: '#444' }}

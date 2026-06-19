@@ -30,6 +30,54 @@ async function getUserRole(uid) {
   }
 }
 
+// Timezone helpers for Asia/Kolkata (IST)
+function getISTStartOfDay(dateOrString) {
+  const d = new Date(dateOrString);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const formatted = formatter.format(d);
+  const [year, month, day] = formatted.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0) - 5.5 * 60 * 60 * 1000);
+}
+
+function getISTEndOfDay(dateOrString) {
+  const d = new Date(dateOrString);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const formatted = formatter.format(d);
+  const [year, month, day] = formatted.split('-').map(Number);
+  const startOfISTDay = Date.UTC(year, month - 1, day, 0, 0, 0) - 5.5 * 60 * 60 * 1000;
+  return new Date(startOfISTDay + 24 * 60 * 60 * 1000 - 1);
+}
+
+function getISTDateString(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function getISTTrendLabel(date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'numeric'
+  }).formatToParts(date);
+  const day = parts.find(p => p.type === 'day').value;
+  const month = parts.find(p => p.type === 'month').value;
+  return `${day}/${month}`;
+}
+
 export async function GET(req) {
   try {
     const decodedToken = await authenticate(req);
@@ -44,25 +92,24 @@ export async function GET(req) {
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
 
-    // Default to last 7 days if not provided
-    let start = new Date();
-    start.setDate(start.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
-
-    let end = new Date();
-    end.setHours(23, 59, 59, 999);
+    // Default to last 7 days in IST if not provided
+    let start, end;
+    const now = new Date();
 
     if (fromDate) {
-      start = new Date(fromDate);
-      start.setHours(0, 0, 0, 0);
+      start = getISTStartOfDay(fromDate);
+    } else {
+      start = getISTStartOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
     }
+
     if (toDate) {
-      end = new Date(toDate);
-      end.setHours(23, 59, 59, 999);
+      end = getISTEndOfDay(toDate);
+    } else {
+      end = getISTEndOfDay(now);
     }
 
     // Check cache before hitting Firestore
-    const cacheKey = `${start.toDateString()}|${end.toDateString()}`;
+    const cacheKey = `${getISTDateString(start)}|${getISTDateString(end)}`;
     const cachedResult = getCachedRevenue(cacheKey);
     if (cachedResult) {
       return NextResponse.json(cachedResult, {
@@ -92,13 +139,14 @@ export async function GET(req) {
     const modeMap = {};
     const dailyTrendMap = {};
 
-    // Initialize dailyTrendMap for all dates in the range
+    // Initialize dailyTrendMap for all dates in the range (in IST)
     const current = new Date(start);
     while (current <= end) {
-      const dateStr = current.toDateString();
-      const label = `${current.getDate()}/${current.getMonth() + 1}`;
-      dailyTrendMap[dateStr] = { date: label, amount: 0, count: 0 };
-      current.setDate(current.getDate() + 1);
+      const istStr = getISTDateString(current);
+      const label = getISTTrendLabel(current);
+      dailyTrendMap[istStr] = { date: label, amount: 0, count: 0 };
+      // Move current by 24 hours
+      current.setTime(current.getTime() + 24 * 60 * 60 * 1000);
     }
 
     snapshot.forEach((doc) => {
@@ -128,10 +176,10 @@ export async function GET(req) {
       // Daily trends
       const docDate = data.date?.toDate?.() || null;
       if (docDate) {
-        const dStr = docDate.toDateString();
-        if (dailyTrendMap[dStr]) {
-          dailyTrendMap[dStr].amount += amount;
-          dailyTrendMap[dStr].count += 1;
+        const istStr = getISTDateString(docDate);
+        if (dailyTrendMap[istStr]) {
+          dailyTrendMap[istStr].amount += amount;
+          dailyTrendMap[istStr].count += 1;
         }
       }
     });

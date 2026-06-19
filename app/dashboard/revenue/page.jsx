@@ -26,7 +26,8 @@ import {
   Cell, 
   Legend, 
   BarChart, 
-  Bar 
+  Bar,
+  Label
 } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
@@ -324,10 +325,14 @@ export default function RevenueDashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={charts.dailyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <LineChart data={charts.dailyTrend} margin={{ top: 10, right: 10, left: 5, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f2ee" />
-                    <XAxis dataKey="date" tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="date" tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} height={40}>
+                      <Label value="Date" position="insideBottom" offset={0} fill="#9DA5A2" fontSize={11} fontWeight={500} />
+                    </XAxis>
+                    <YAxis tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} width={50}>
+                      <Label value="Revenue (₹)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fill: '#9DA5A2', fontSize: 11, fontWeight: 500 }} />
+                    </YAxis>
                     <Tooltip
                       formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E0E4D6' }}
@@ -404,9 +409,13 @@ export default function RevenueDashboard() {
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={charts.partner} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <BarChart data={charts.partner} margin={{ top: 10, right: 10, left: 5, bottom: 5 }}>
+                      <XAxis dataKey="name" tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} height={40}>
+                        <Label value="Courier Partner" position="insideBottom" offset={0} fill="#9DA5A2" fontSize={11} fontWeight={500} />
+                      </XAxis>
+                      <YAxis tick={{ fill: '#9DA5A2', fontSize: 10 }} axisLine={false} tickLine={false} width={50}>
+                        <Label value="Revenue (₹)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fill: '#9DA5A2', fontSize: 11, fontWeight: 500 }} />
+                      </YAxis>
                       <Tooltip
                         formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E0E4D6' }}

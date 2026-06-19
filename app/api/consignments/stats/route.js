@@ -11,6 +11,52 @@ async function authenticate(req) {
   return adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
 }
 
+// Timezone helpers for Asia/Kolkata (IST)
+function getISTStartOfDay(date) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const formatted = formatter.format(date);
+  const [year, month, day] = formatted.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0) - 5.5 * 60 * 60 * 1000);
+}
+
+function getISTEndOfDay(date) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const formatted = formatter.format(date);
+  const [year, month, day] = formatted.split('-').map(Number);
+  const startOfISTDay = Date.UTC(year, month - 1, day, 0, 0, 0) - 5.5 * 60 * 60 * 1000;
+  return new Date(startOfISTDay + 24 * 60 * 60 * 1000 - 1);
+}
+
+function getISTDateString(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function getISTDisplayName(date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    day: 'numeric'
+  }).formatToParts(date);
+  const weekday = parts.find(p => p.type === 'weekday').value;
+  const day = parts.find(p => p.type === 'day').value;
+  return `${weekday} ${day}`;
+}
+
 export async function GET(req) {
   try {
     await authenticate(req);
@@ -21,19 +67,16 @@ export async function GET(req) {
       return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
     }
 
-    // ── Build Timestamp boundaries ────────────────────────────────────────
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
-    fourteenDaysAgo.setHours(0, 0, 0, 0);
+    // ── Build Timestamp boundaries in Asia/Kolkata ─────────────────────────
+    const now = new Date();
+    const todayStart = getISTStartOfDay(now);
+    const todayEnd = getISTEndOfDay(now);
+    const fourteenDaysAgo = new Date(todayStart.getTime() - 13 * 24 * 60 * 60 * 1000);
 
     const tsStart = admin.firestore.Timestamp.fromDate(todayStart);
     const tsEnd   = admin.firestore.Timestamp.fromDate(todayEnd);
     const ts14    = admin.firestore.Timestamp.fromDate(fourteenDaysAgo);
+
 
     // ── Run all queries in parallel ───────────────────────────────────────
     // count() queries cost exactly 1 read each, regardless of matched docs.
@@ -107,10 +150,7 @@ export async function GET(req) {
     });
 
     // ── Chart data (last 7 days and status counts) ─────────────────────────
-    const today = new Date();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
     const ts7 = sevenDaysAgo.getTime();
 
     let last7Delivered = 0;
@@ -118,9 +158,10 @@ export async function GET(req) {
 
     const last7Map  = {};
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(today.getDate() - i);
-      last7Map[d.toDateString()] = {
-        name: d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
+      const d = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
+      const istStr = getISTDateString(d);
+      last7Map[istStr] = {
+        name: getISTDisplayName(d),
         consignments: 0,
       };
     }
@@ -134,11 +175,14 @@ export async function GET(req) {
       const data = doc.data();
       const d = data.date?.toDate?.() ?? null;
       if (!d) return;
-      const ds = d.toDateString();
+      
+      const istStr = getISTDateString(d);
       const timeMs = d.getTime();
 
       if (timeMs >= ts7) {
-        if (last7Map[ds])  last7Map[ds].consignments++;
+        if (last7Map[istStr] !== undefined) {
+          last7Map[istStr].consignments++;
+        }
         if (data.deliveryStatus === 'Delivered') {
           last7Delivered++;
         } else if (['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
