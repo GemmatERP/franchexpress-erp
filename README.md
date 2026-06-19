@@ -7,14 +7,14 @@ A production-grade, highly-functional Mini ERP web application designed specific
 ## 🚀 Features
 
 - **Role-Based Authentication**: Admin, Employee, and Delivery Agent workspace access.
-- **Interactive KPI Dashboard**: Count-up animation widgets showing revenue (Indian currency formatting), daily bookings, and pending shipment queues.
-- **Analytics Charts**: Visualizations for daily package counts, status allocations, and 14-day revenue trajectories (Recharts).
-- **Interactive Consignment Booking**: Full form with 5 collapsible panels, keyboard accessibility, Indian format validations, and custom "Copy All" formatted clipboard sharing.
-- **Live AWB Tracking Proxy**: Server-side proxy handling CORS-safe requests to tracking timelines.
-- **Pluggable Notifications**: Dispatch alerts via Fast2SMS, Twilio, or WhatsApp Business (Wati.io) API clients.
-- **Delivery agent dashboard**: Mobile-friendly queue displaying contacts (Tel/WA click buttons), package dimensions, and direct status updates.
-- **BI Reports & Horizontal exports**: Filters for dates, payment options, and carriers. Download current listings instantly as Excel (SheetJS) or CSV (PapaParse).
-- **Strict Compliance**: Light theme styling, 4.5:1 text color contrast, focus indicators, and prefers-reduced-motion screen bindings.
+- **Interactive KPI Dashboard**: Count-up animation widgets showing daily bookings, pending shipment queues, and delivered items.
+- **Consignments Dashboard**: Count-based status groups (Transit & Pending, Out for Delivery, Holding at HUB, Delivered, Returned & Cancelled) with direct table filtering and multi-field search.
+- **Consignment Details & Tracking Timeline**: Dedicated shipment page showing billing, weights, courier partner details, and a vertical live tracking history timeline (origin to destination, including POD signature rendering).
+- **Printable Vouchers**: Clean print-media layout styling for A4 paper margins on Consignment Details.
+- **Admin Revenue Dashboard**: Analytics showing Total Revenue, Average Booking Value, Cash/Credit/UPI splits, Daily Revenue Trends, and Courier Partner revenue shares with custom and preset date range filters.
+- **WhatsApp Messaging Hub**: Interactive auditing console showing all outbound notification templates sent to senders/receivers (delivery status: sent ➔ delivered ➔ read) and inbound customer replies (text responses and GPS location shares).
+- **Auto-Sync Scheduler**: Automated nightly Vercel Cron jobs fetching live transit logs from the official carrier API and pruning database records over 30 days old to reduce storage overhead.
+- **Strict Compliance**: Light theme styling, 4.5:1 text color contrast, custom focus rings, and prefers-reduced-motion screen bindings.
 
 ---
 
@@ -39,7 +39,7 @@ A production-grade, highly-functional Mini ERP web application designed specific
 
 | Role | Email | Password | Permissions |
 |---|---|---|---|
-| **Admin** | `admin@fe.com` | `Admin@123` | Full access + delete consignments |
+| **Admin** | `admin@fe.com` | `Admin@123` | Full access + revenue reports + delete consignments |
 | **Employee** | `employee@fe.com` | `Emp@123` | Register/edit consignments, view reports, read dashboard |
 | **Delivery** | `delivery@fe.com` | `Del@123` | View assigned package deliveries, update route status |
 
@@ -50,57 +50,81 @@ A production-grade, highly-functional Mini ERP web application designed specific
 ```
 franchexpress-erp/
 ├── app/
-│   ├── layout.jsx                        ← Fonts, providers, global accessibility
+│   ├── layout.jsx                        ← Fonts, providers, edit context, global accessibility
 │   ├── globals.css                       ← Tailwind & custom utility classes
 │   ├── page.jsx                          ← Initial route index redirect
 │   ├── login/
 │   │   └── page.jsx                      ← Login page
 │   ├── dashboard/
 │   │   ├── layout.jsx                    ← Admin shell, navigation breadcrumbs
-│   │   ├── page.jsx                      ← Dashboard index
+│   │   ├── page.jsx                      ← Operational dashboard index
 │   │   ├── consignments/
+│   │   │   ├── page.jsx                  ← Paginated consignment listing & tabs
+│   │   │   ├── [id]/
+│   │   │   │   └── page.jsx              ← Shipment details & tracking timeline
+│   │   │   ├── edit/
+│   │   │   │   └── page.jsx              ← Dedicated edit consignment form
 │   │   │   └── new/
-│   │   │       └── page.jsx              ← New consignment form
+│   │   │       └── page.jsx              ← Collapsible new booking form
 │   │   ├── delivery/
-│   │   │   └── page.jsx                  ← Delivery agent dashboard
-│   │   └── reports/
-│   │       └── page.jsx                  ← Advanced reports search
+│   │   │   └── page.jsx                  ← Delivery agent queue
+│   │   ├── reports/
+│   │   │   └── page.jsx                  ← Advanced reports & Excel export
+│   │   ├── revenue/
+│   │   │   └── page.jsx                  ← Date-filtered revenue charts & metrics
+│   │   ├── whatsapp/
+│   │   │   └── page.jsx                  ← WhatsApp log auditer & conversation feed
+│   │   └── sync/
+│   │       └── page.jsx                  ← Cron job executions tracker
 │   └── api/
 │       ├── consignments/
-│       │   └── route.js                  ← GET (list) + POST (create) endpoints
-│       ├── consignments/[id]/
-│       │   └── route.js                  ← GET + PUT + DELETE (by id)
-│       ├── track/
-│       │   └── route.js                  ← CORS-safe AWB proxy
-│       └── notify/
-│           └── route.js                  ← SMS/WA dispatch router
+│       │   ├── route.js                  ← GET (list) + POST (create) endpoints
+│       │   ├── [id]/
+│       │   │   └── route.js              ← GET + PUT + DELETE (by id)
+│       │   ├── revenue-stats/
+│       │   │   └── route.js              ← Revenue charts data aggregator
+│       │   ├── search/
+│       │   │   └── route.js              ← Multi-field query search API
+│       │   └── stats/
+│       │       └── route.js              ← Operational counters & charts API
+│       ├── notify/
+│       │   └── route.js                  ← SMS/WA dispatch router
+│       ├── sync-logs/
+│       │   └── route.js                  ← Cron sync runs reader API
+│       └── whatsapp/
+│           ├── messages/
+│           │   └── route.js              ← WhatsApp logs fetcher & search API
+│           └── webhook/
+│               └── route.js              ← Meta webhook message/delivery status sync
 ├── components/
 │   ├── layout/
 │   │   ├── Sidebar.jsx                   ← Shell navigation sidebar
-│   │   ├── TopBar.jsx                    ← Shell header
-│   │   └── MobileDrawer.jsx              ← Shell mobile slideout
+│   │   ├── TopBar.jsx                    ← Avatar, profile manager modal
+│   │   └── MobileDrawer.jsx              ← Responsive slideout
 │   ├── ui/
 │   │   ├── Button.jsx                    ← Framer motion button variants
 │   │   ├── Input.jsx                     ← Accessible inputs
 │   │   ├── Select.jsx                    ← Accessible drop-down selectors
-│   │   ├── Badge.jsx                     ← Status color-badge chips
+│   │   ├── Badge.jsx                     ← Color status tags
 │   │   ├── Card.jsx                      ← Bordered panels
-│   │   ├── Modal.jsx                     ← Focus-trapped accessible dialog
+│   │   ├── Modal.jsx                     ← Focus-trapped dialog
 │   │   ├── Toast.jsx                     ← Animated alert popups
 │   │   └── Spinner.jsx                   ← SVG loading spinner
 │   ├── dashboard/
-│   │   ├── KPICard.jsx                   ← Count-up KPI metric card
-│   │   ├── DashboardCharts.jsx           ← Bar, line, and pie recharts
+│   │   ├── KPICard.jsx                   ← Metric summary card
+│   │   ├── DashboardCharts.jsx           ← Main volume bar & status pie charts
 │   │   ├── TodayTable.jsx                ← Today's consignment rows
 │   │   └── PendingTable.jsx              ← Pending consignment rows
 │   ├── consignment/
 │   │   ├── ConsignmentForm.jsx           ← Form control binder
-│   │   ├── ShipmentSection.jsx           ← Voucher & Courier partner info
+│   │   ├── ShipmentSection.jsx           ← Booking metadata
 │   │   ├── PaymentSection.jsx            ← Charge details & Paid status
 │   │   ├── ConsignorSection.jsx          ← Sender details
 │   │   ├── ConsigneeSection.jsx          ← Recipient details
 │   │   ├── DeliverySection.jsx           ← Routing status details
 │   │   ├── TrackingTimeline.jsx          ← Progress logs
+│   │   ├── DuplicateAwbModal.jsx         ← Prevent duplicate AWB dialog
+│   │   ├── UnsavedChangesModal.jsx       ← Guard unsaved inputs modal
 │   │   └── CopyButton.jsx                ← Copy text formatter
 │   ├── delivery/
 │   │   └── DeliveryCard.jsx              ← Contact cards for agents
@@ -112,9 +136,11 @@ franchexpress-erp/
 │   ├── firebase.js                       ← Client SDK config
 │   ├── firebase-admin.js                 ← Admin SDK config
 │   ├── auth-context.jsx                  ← React Context state
-│   ├── notifications.js                  ← Pluggable dispatch clients
+│   ├── ConsignmentEditContext.jsx        ← React edit session Context
+│   ├── notifications.js                  ← WhatsApp dispatch handler & logger
+│   ├── stats-cache.js                    ← In-memory role & stats caching
 │   ├── export.js                         ← File export tools
-│   ├── tracking.js                       ← Proxy parsing
+│   ├── tracking.js                       ← Live tracking parser
 │   └── utils.js                          ← Formatters & validations
 ├── hooks/
 │   ├── useConsignments.js                ← CRUD API binder
@@ -124,7 +150,7 @@ franchexpress-erp/
 ├── middleware.js                         ← Security route matcher
 ├── tailwind.config.js                    ← Colors & tokens
 ├── next.config.js                        ← Next config
-├── vercel.json                           ← Vercel deployment parameters
+├── vercel.json                           ← Vercel deployment & cron config
 ├── .env.local.example                    ← Environment values template
 ├── firestore.rules                       ← Firestore security definitions
 ├── firestore.indexes.json                ← Query indices configuration
@@ -192,4 +218,4 @@ Open `http://localhost:3000` to interact with your ERP.
 
 ## ✉️ Notifications Configuration
 
-For details about configuring SMS providers (Fast2SMS, Twilio) and WhatsApp Business API integrations, read the [NOTIFICATIONS.md](file:///C:/Users/lucif/.gemini/antigravity-ide/scratch/franchexpress-erp/NOTIFICATIONS.md) guide.
+For details about configuring SMS providers (Fast2SMS, Twilio) and WhatsApp Business API integrations, read the [NOTIFICATIONS.md](file:///Users/mk-mac/.gemini/antigravity-ide/scratch/franchexpress-erp/NOTIFICATIONS.md) guide.

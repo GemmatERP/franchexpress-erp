@@ -33,6 +33,8 @@
 | 17 | WhatsApp Notification Integration | ✅ Done |
 | 18 | New Consignment Page Revamp & Edit Separation | ✅ Done |
 | 19 | Post-Revamp Follow-up Bug Fixes & Query Fallbacks | ✅ Done |
+| 20 | WhatsApp Messaging Hub & Inbound Reply Auditing | ✅ Done |
+| 21 | Axis Labels & Timezone Stats Alignment | ✅ Done |
 
 ---
 
@@ -371,6 +373,24 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 21 — Axis Labels & Timezone Stats Alignment
+
+**Goal**: Fix missing labels on overall charts (X and Y axes) and resolve timezone alignment issue in stats and revenue charts where June 16 and June 13 were missing or showing wrong values due to midnight IST timestamp offsets.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Created timezone helpers in `/api/consignments/stats/route.js` and `/api/consignments/revenue-stats/route.js` to calculate date boundaries and group data strictly in the `Asia/Kolkata` (IST) timezone | ✅ Done |
+| 2 | Updated Stats API date ranges and grouping to align with IST midnight offsets, resolving the missing `Tue 16` (8 consignments) and `Sat 13` (34 consignments) volume bars | ✅ Done |
+| 3 | Updated Revenue Stats API trend map and document mapping to align with IST, resolving the near-zero revenue plotting for `16/6` | ✅ Done |
+| 4 | Added X-axis ("Date") and Y-axis ("Consignments") labels with heights and widths on the Consignment Volume bar chart in `DashboardCharts.jsx` | ✅ Done |
+| 5 | Added X-axis ("Date" / "Courier Partner") and Y-axis ("Revenue (₹)") labels to the LineChart and BarChart in `app/dashboard/revenue/page.jsx` | ✅ Done |
+| 6 | Normalized incoming Flow response keys to lowercase in `app/api/whatsapp/webhook/route.js` to handle Meta's casing variations case-insensitively | ✅ Done |
+| 7 | Created and executed a migration script (`scratch/fix_existing_docs.js`) to retroactively format existing raw technical rating response logs in Firestore to the clean human-readable feedback layout | ✅ Done |
+| 8 | Switched to new branch `fix/charts-timezone-labels`, committed, and pushed changes to remote repository | ✅ Done |
+| 9 | Checked out `main` and merged all pending feature branches successfully, then pushed to origin | ✅ Done |
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -411,6 +431,8 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | `components/consignment/EditShipmentSection.jsx` | **[NEW]** Split editable and read-only form elements for editing |
 | `components/consignment/EditReadOnlySection.jsx` | **[NEW]** Pure visual read-only summary for consignor and consignee blocks |
 | `lib/ConsignmentEditContext.jsx` | **[NEW]** React Context keeping in-memory and sessionStorage backup of active edit IDs |
+| `scratch/fix_existing_docs.js` | **[NEW]** Migration script for WhatsApp Flow feedback formatting |
+| `scratch/check_consignments_dates.js` | **[NEW]** Diagnostics script for consignment booking dates |
 
 ---
 
