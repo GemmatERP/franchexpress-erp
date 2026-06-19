@@ -76,7 +76,7 @@ export default function ConsignmentsDashboard() {
 
   // Group items by status
   const groups = {
-    transit: allItems.filter(item => ['Transit', 'Reached Destination'].includes(item.deliveryStatus)),
+    transit: allItems.filter(item => ['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination'].includes(item.deliveryStatus)),
     out: allItems.filter(item => item.deliveryStatus === 'Out of Delivery'),
     holding: allItems.filter(item => item.deliveryStatus === 'Holding at HUB'),
     delivered: allItems.filter(item => item.deliveryStatus === 'Delivered'),

@@ -78,7 +78,7 @@ export async function GET(req) {
     let filteredDocs;
     try {
       const consignmentsSnap = await adminDb.collection('consignments')
-        .where('deliveryStatus', 'in', ['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
+        .where('deliveryStatus', 'in', ['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
         .where('date', '>=', ts60)
         .orderBy('date', 'desc')
         .get();
@@ -88,7 +88,7 @@ export async function GET(req) {
         console.warn('Sync composite index not ready. Querying pending docs and filtering in-memory.');
         // Fallback: Query all pending status codes (standard single-field index)
         const allPending = await adminDb.collection('consignments')
-          .where('deliveryStatus', 'in', ['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
+          .where('deliveryStatus', 'in', ['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'])
           .get();
         // Filter and sort in-memory
         const threshold = sixtyDaysAgo.getTime();

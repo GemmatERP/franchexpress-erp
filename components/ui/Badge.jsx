@@ -10,11 +10,15 @@ const statusMap = {
   'Returned': 'bg-red-100 text-red-700',
   'Holding at HUB': 'bg-purple-100 text-purple-700',
   'Delivered': 'bg-fe-green/20 text-green-700',
+  'Processed': 'bg-amber-100 text-amber-700',
+  'Booked': 'bg-amber-100 text-amber-700',
+  'Processing': 'bg-amber-100 text-amber-700',
+  'Pending': 'bg-amber-100 text-amber-700',
   
   // Paid statuses
   'Paid': 'bg-green-100 text-green-800',
   'Not Paid': 'bg-red-100 text-red-800',
-
+  
   // Role badges
   'admin': 'bg-red-100 text-red-800 border border-red-200',
   'employee': 'bg-blue-100 text-blue-800 border border-blue-200',

@@ -71,7 +71,7 @@ function buildMockStats(items) {
 
   items.forEach((item) => {
     if (isToday(item.date)) { todayBookings++; todayRevenue += Number(item.amount) || 0; }
-    if (['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)) pendingShipments++;
+    if (['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)) pendingShipments++;
     if (item.deliveryStatus === 'Delivered' && isToday(item.deliveredDate)) deliveredToday++;
     const ds = new Date(item.date).toDateString();
     if (last7[ds]) last7[ds].consignments++;

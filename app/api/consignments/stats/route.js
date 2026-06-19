@@ -54,7 +54,7 @@ export async function GET(req) {
       // 1 read: Count all pending shipments
       adminDb.collection('consignments')
         .where('deliveryStatus', 'in', [
-          'Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB',
+          'Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB',
         ])
         .count()
         .get(),
@@ -86,7 +86,7 @@ export async function GET(req) {
     todayFullSnap.forEach((doc) => {
       const data = doc.data();
       
-      if (['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
+      if (['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
         todayPending++;
       }
 
@@ -141,7 +141,7 @@ export async function GET(req) {
         if (last7Map[ds])  last7Map[ds].consignments++;
         if (data.deliveryStatus === 'Delivered') {
           last7Delivered++;
-        } else if (['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
+        } else if (['Booked', 'Processing', 'Processed', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(data.deliveryStatus)) {
           last7Pending++;
         }
       }
