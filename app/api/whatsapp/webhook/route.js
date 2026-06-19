@@ -167,23 +167,30 @@ export async function POST(req) {
             const nfmReply = interactive.nfm_reply;
             let bodyText = `📝 Customer Rating Feedback`;
             let responseData = {};
-            try {
+             try {
               responseData = JSON.parse(nfmReply.response_json || '{}');
               const lines = [];
 
-              if (responseData.screen_0_choose_one_0 !== undefined) {
-                let val = String(responseData.screen_0_choose_one_0);
+              // Normalize keys to lowercase for case-insensitive matching
+              const normalizedData = {};
+              Object.entries(responseData).forEach(([key, val]) => {
+                normalizedData[key.toLowerCase()] = val;
+              });
+
+              if (normalizedData.screen_0_choose_one_0 !== undefined) {
+                let val = String(normalizedData.screen_0_choose_one_0);
                 val = val.replace(/^\d+_/, ''); // Strip numeric prefix (e.g. "0_Yes" -> "Yes")
                 lines.push(`Feedback: ${val}`);
               }
 
-              if (responseData.screen_0_leave_a_1 !== undefined) {
-                lines.push(`Comments: ${responseData.screen_0_leave_a_1}`);
+              if (normalizedData.screen_0_leave_a_1 !== undefined) {
+                lines.push(`Comments: ${normalizedData.screen_0_leave_a_1}`);
               }
 
               // Fallback for any other custom keys (excluding flow_token)
               Object.entries(responseData).forEach(([key, val]) => {
-                if (key === 'screen_0_choose_one_0' || key === 'screen_0_leave_a_1' || key === 'flow_token') {
+                const lowerKey = key.toLowerCase();
+                if (lowerKey === 'screen_0_choose_one_0' || lowerKey === 'screen_0_leave_a_1' || lowerKey === 'flow_token') {
                   return;
                 }
                 const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
