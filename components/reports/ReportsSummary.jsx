@@ -15,7 +15,7 @@ export function ReportsSummary({ consignments = [] }) {
   
   // Count pending (Transit, Out of Delivery, Holding at HUB, Reached Destination)
   const pendingCount = consignments.filter(item => 
-    ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)
+    ['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)
   ).length;
 
   return (

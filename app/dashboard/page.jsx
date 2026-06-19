@@ -65,7 +65,7 @@ export default function DashboardHome() {
   const todayItems   = consignments;
   // Pending items are shown via KPI count; table uses today's items filtered by status
   const pendingItems = consignments.filter((item) =>
-    ['Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)
+    ['Booked', 'Processing', 'Pending', 'Transit', 'Reached Destination', 'Out of Delivery', 'Holding at HUB'].includes(item.deliveryStatus)
   );
 
   return (
