@@ -160,6 +160,46 @@ export async function POST(req) {
           }
         }
 
+        // Handle interactive messages (Flow completions)
+        if (msgType === 'interactive') {
+          const interactive = message.interactive;
+          if (interactive?.type === 'nfm_reply' && interactive?.nfm_reply) {
+            const nfmReply = interactive.nfm_reply;
+            let bodyText = `[Flow Response: ${nfmReply.body || 'Feedback Submitted'}]`;
+            let responseData = {};
+            try {
+              responseData = JSON.parse(nfmReply.response_json || '{}');
+              const lines = Object.entries(responseData).map(([key, val]) => {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return `${label}: ${val}`;
+              });
+              if (lines.length > 0) {
+                bodyText += '\n' + lines.join('\n');
+              }
+            } catch (parseErr) {
+              console.warn('[Webhook Flow response JSON parse error]:', parseErr.message);
+              bodyText += `\nRaw: ${nfmReply.response_json}`;
+            }
+
+            console.log(`[WhatsApp] Flow Response from ${from}: ${bodyText}`);
+
+            if (adminDb) {
+              await adminDb.collection('whatsapp_messages').add({
+                direction: 'inbound',
+                senderPhone: from,
+                msgType: 'interactive',
+                interactiveType: 'nfm_reply',
+                flowResponse: responseData,
+                body: bodyText,
+                status: 'received',
+                timestamp: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                awb: associatedAwb || null,
+              });
+            }
+          }
+        }
+
         // Handle text replies
         if (msgType === 'text') {
           const text = message.text?.body;
