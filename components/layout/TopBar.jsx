@@ -398,6 +398,7 @@ function ProfileModal({ isOpen, onClose }) {
       `}</style>
     </div>
   );
+}
 
 export function TopBar({ title, onOpenMenu, breadcrumbs = [] }) {
   const { profile, role } = useAuth();
