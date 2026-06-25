@@ -48,6 +48,8 @@ export default function DashboardLayout({ children }) {
       setPageTitle('WhatsApp Messaging Hub');
     } else if (pathname === '/dashboard/search') {
       setPageTitle('Find Consignments');
+    } else if (pathname === '/dashboard/users') {
+      setPageTitle('User Management');
     } else {
       setPageTitle('FranchExpress ERP');
     }

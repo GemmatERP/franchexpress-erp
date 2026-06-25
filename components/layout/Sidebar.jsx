@@ -13,7 +13,8 @@ import {
   Search,
   Coins,
   Package,
-  MessageSquare
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -29,61 +30,70 @@ export function Sidebar({ className = '' }) {
       label: 'Dashboard',
       href: '/dashboard',
       icon: LayoutDashboard,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'New Consignment',
       href: '/dashboard/consignments/new',
       icon: PackagePlus,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Revenue',
       href: '/dashboard/revenue',
       icon: Coins,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Search Consignments',
       href: '/dashboard/search',
       icon: Search,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Consignments View',
       href: '/dashboard/consignments',
       icon: Package,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Delivery View',
       href: '/dashboard/delivery',
       icon: Truck,
-      roles: ['admin', 'delivery'],
+      roles: ['admin', 'super_admin', 'delivery'],
     },
     {
       label: 'Reports & Export',
       href: '/dashboard/reports',
       icon: FileBarChart,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'WhatsApp Logs',
       href: '/dashboard/whatsapp',
       icon: MessageSquare,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Sync Logs',
       href: '/dashboard/sync',
       icon: RefreshCw,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
+    },
+    {
+      label: 'User Management',
+      href: '/dashboard/users',
+      icon: Users,
+      roles: ['super_admin'],
     },
   ];
 
 
   // Filter items by current user's role
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
+
+  // For super_admin — also show admin-level items by treating them as admin
+  // (super_admin inherits all admin routes since roles array includes 'super_admin' or 'admin')
 
   return (
     <aside className={`w-[260px] bg-white border-r border-fe-muted/30 flex flex-col h-screen fixed left-0 top-0 z-30 ${className}`}>

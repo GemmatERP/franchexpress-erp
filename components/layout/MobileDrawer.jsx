@@ -15,7 +15,8 @@ import {
   Search,
   Coins,
   Package,
-  MessageSquare
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -83,55 +84,61 @@ export function MobileDrawer({ isOpen, onClose }) {
       label: 'Dashboard',
       href: '/dashboard',
       icon: LayoutDashboard,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'New Consignment',
       href: '/dashboard/consignments/new',
       icon: PackagePlus,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Revenue',
       href: '/dashboard/revenue',
       icon: Coins,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Search Consignments',
       href: '/dashboard/search',
       icon: Search,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Consignments View',
       href: '/dashboard/consignments',
       icon: Package,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Delivery View',
       href: '/dashboard/delivery',
       icon: Truck,
-      roles: ['admin', 'delivery'],
+      roles: ['admin', 'super_admin', 'delivery'],
     },
     {
       label: 'Reports & Export',
       href: '/dashboard/reports',
       icon: FileBarChart,
-      roles: ['admin', 'employee'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'WhatsApp Logs',
       href: '/dashboard/whatsapp',
       icon: MessageSquare,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Sync Logs',
       href: '/dashboard/sync',
       icon: RefreshCw,
-      roles: ['admin'],
+      roles: ['admin', 'super_admin'],
+    },
+    {
+      label: 'User Management',
+      href: '/dashboard/users',
+      icon: Users,
+      roles: ['super_admin'],
     },
   ];
 
