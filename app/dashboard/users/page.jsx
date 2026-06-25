@@ -21,6 +21,7 @@ import {
   Trash2,
   X,
   Save,
+  KeyRound,
 } from 'lucide-react';
 
 const ROLE_OPTIONS = [
@@ -36,13 +37,199 @@ const ROLE_BADGE = {
   delivery: 'bg-amber-50 text-amber-700 border border-amber-200',
 };
 
-const ROLE_LABELS = { super_admin: 'Super Admin', admin: 'Admin', employee: 'Employee', delivery: 'Delivery' };
-
 function RoleBadge({ role }) {
+  const labels = { super_admin: 'Super Admin', admin: 'Admin', employee: 'Employee', delivery: 'Delivery' };
   return (
     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_BADGE[role] || 'bg-gray-100 text-gray-600'}`}>
-      {ROLE_LABELS[role] || role}
+      {labels[role] || role}
     </span>
+  );
+}
+
+// ── Password Strength Indicator ───────────────────────────────────────────────
+function PasswordStrength({ password }) {
+  if (!password) return null;
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const score = checks.filter(Boolean).length;
+  const colors = ['bg-red-400', 'bg-amber-400', 'bg-blue-400', 'bg-green-500'];
+  const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const textColors = ['text-red-500', 'text-amber-500', 'text-blue-500', 'text-green-600'];
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex gap-1">
+        {[0,1,2,3].map(i => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < score ? colors[score-1] : 'bg-fe-muted/30'}`} />
+        ))}
+      </div>
+      {score > 0 && (
+        <p className={`text-[10px] font-semibold font-sans ${textColors[score-1]}`}>{labels[score-1]} password</p>
+      )}
+    </div>
+  );
+}
+
+// ── Reset Password Modal ──────────────────────────────────────────────────────
+function ResetPasswordModal({ user: resetUser, getToken, onClose }) {
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setResult(null);
+    if (newPw !== confirmPw) {
+      setResult({ type: 'error', message: 'Passwords do not match.' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/users/${resetUser.uid}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ newPassword: newPw }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult({ type: 'success', message: `Password for ${resetUser.name || resetUser.email} has been reset successfully.` });
+        setNewPw(''); setConfirmPw('');
+      } else {
+        setResult({ type: 'error', message: data.error || 'Failed to reset password.' });
+      }
+    } catch (err) {
+      setResult({ type: 'error', message: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const mismatch = confirmPw && confirmPw !== newPw;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-fe-muted/30 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-fe-muted/20">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-amber-50 border border-amber-200">
+              <KeyRound className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-heading font-bold text-fe-dark">Reset Password</h3>
+              <p className="text-[10px] text-fe-gray font-sans truncate max-w-[220px]">
+                {resetUser.name || resetUser.email}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-fe-gray hover:bg-fe-bg hover:text-fe-dark transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Info banner */}
+        <div className="mx-6 mt-4 flex items-start gap-2.5 px-3.5 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
+          <KeyRound className="h-4 w-4 shrink-0 mt-0.5" />
+          <p className="text-xs font-sans">
+            As Super Admin you can set a new password directly — the user's current password is not required.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* New Password */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-fe-gray">New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fe-gray/60" />
+              <input
+                id="reset-new-password"
+                type={showNew ? 'text' : 'password'}
+                value={newPw}
+                onChange={e => { setNewPw(e.target.value); setResult(null); }}
+                required
+                minLength={6}
+                placeholder="Min. 6 characters"
+                className="w-full pl-9 pr-10 py-2.5 text-sm font-sans border border-fe-muted/40 rounded-lg bg-fe-bg/30 text-fe-dark placeholder:text-fe-gray/50 focus:outline-none focus:ring-2 focus:ring-fe-teal/30 focus:border-fe-teal transition-all"
+              />
+              <button type="button" onClick={() => setShowNew(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fe-gray/60 hover:text-fe-gray transition-colors">
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <PasswordStrength password={newPw} />
+          </div>
+
+          {/* Confirm Password */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-fe-gray">Confirm New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fe-gray/60" />
+              <input
+                id="reset-confirm-password"
+                type={showConfirm ? 'text' : 'password'}
+                value={confirmPw}
+                onChange={e => { setConfirmPw(e.target.value); setResult(null); }}
+                required
+                placeholder="Re-enter new password"
+                className={`w-full pl-9 pr-10 py-2.5 text-sm font-sans border rounded-lg bg-fe-bg/30 text-fe-dark placeholder:text-fe-gray/50 focus:outline-none focus:ring-2 transition-all ${
+                  mismatch
+                    ? 'border-red-400 focus:ring-red-200 focus:border-red-400'
+                    : 'border-fe-muted/40 focus:ring-fe-teal/30 focus:border-fe-teal'
+                }`}
+              />
+              <button type="button" onClick={() => setShowConfirm(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fe-gray/60 hover:text-fe-gray transition-colors">
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {mismatch && <p className="text-[10px] text-red-500 font-sans">Passwords do not match</p>}
+          </div>
+
+          {/* Result */}
+          {result && (
+            <div className={`flex items-start gap-2 p-3 rounded-lg text-xs font-sans ${
+              result.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              {result.type === 'success'
+                ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+              {result.message}
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 text-sm font-bold font-sans rounded-lg border border-fe-muted/40 text-fe-gray hover:bg-fe-bg transition-all">
+              {result?.type === 'success' ? 'Close' : 'Cancel'}
+            </button>
+            {result?.type !== 'success' && (
+              <button
+                id="reset-password-btn"
+                type="submit"
+                disabled={saving || mismatch}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-500 text-white text-sm font-bold font-sans rounded-lg hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              >
+                {saving
+                  ? <><Loader2 className="h-4 w-4 animate-spin" />Resetting...</>
+                  : <><KeyRound className="h-4 w-4" />Reset Password</>}
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -267,8 +454,9 @@ export default function UsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formResult, setFormResult] = useState(null);
 
-  const [editUser, setEditUser] = useState(null);   // user being edited
-  const [deleteUser, setDeleteUser] = useState(null); // user being deleted
+  const [editUser, setEditUser] = useState(null);
+  const [deleteUser, setDeleteUser] = useState(null);
+  const [resetUser, setResetUser] = useState(null); // user whose password is being reset
 
   // Guard
   useEffect(() => {
@@ -353,6 +541,15 @@ export default function UsersPage() {
           getToken={getToken}
           onClose={() => setDeleteUser(null)}
           onDeleted={() => { setDeleteUser(null); fetchUsers(); }}
+        />
+      )}
+
+      {/* Reset Password Modal */}
+      {resetUser && (
+        <ResetPasswordModal
+          user={resetUser}
+          getToken={getToken}
+          onClose={() => setResetUser(null)}
         />
       )}
 
@@ -621,7 +818,16 @@ export default function UsersPage() {
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
 
-                                {/* Delete — disabled for self */}
+                                {/* Reset Password */}
+                                <button
+                                  onClick={() => setResetUser(u)}
+                                  title="Reset password"
+                                  className="p-1.5 rounded-lg text-fe-gray hover:text-amber-600 hover:bg-amber-50 transition-all"
+                                >
+                                  <KeyRound className="h-3.5 w-3.5" />
+                                </button>
+
+                                {/* Delete */}
                                 <button
                                   onClick={() => !isSelf && setDeleteUser(u)}
                                   disabled={isSelf}
