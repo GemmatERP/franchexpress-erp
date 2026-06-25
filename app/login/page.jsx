@@ -132,12 +132,6 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
-          
-          <div className="mt-8 border-t border-fe-muted/30 w-full pt-4 text-center">
-            <p className="text-[10px] text-fe-gray font-mono">
-              Demo Users: admin@fe.com · employee@fe.com · delivery@fe.com
-            </p>
-          </div>
         </Card>
       </motion.div>
     </main>
