@@ -140,8 +140,8 @@ export async function GET(req) {
         if (dd.toDateString() === todayStr) deliveredToday++;
       }
 
-      // Serialize Timestamps
-      if (data.date)          data.date          = data.date.toDate().toISOString();
+      // Serialize Timestamps safely
+      if (data.date)          data.date          = data.date?.toDate?.()?.toISOString()   ?? data.date;
       if (data.paymentDate)   data.paymentDate   = data.paymentDate?.toDate?.()?.toISOString()   ?? data.paymentDate;
       if (data.deliveredDate) data.deliveredDate = data.deliveredDate?.toDate?.()?.toISOString() ?? data.deliveredDate;
       if (data.createdAt)     data.createdAt     = data.createdAt?.toDate?.()?.toISOString()     ?? data.createdAt;

@@ -2,12 +2,19 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Package, AlertCircle } from 'lucide-react';
+import { ChevronDown, Package, AlertCircle, Scan } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import dynamic from 'next/dynamic';
+
+const BarcodeScannerModal = dynamic(
+  () => import('./BarcodeScannerModal').then((mod) => mod.BarcodeScannerModal),
+  { ssr: false }
+);
 
 export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, awbDuplicateChecking, sectionNumber = 1 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const toggleSection = () => setIsOpen(!isOpen);
 
@@ -17,11 +24,11 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
   ];
   const voucherOptions = ['Normal', 'COD', 'To Pay', 'Safety Plus'];
 
-  // Only allow numeric keypresses on AWB field
+  // Prevent Enter key from submitting the form, trigger blur (duplicate check) instead
   const handleAwbKeyDown = (e) => {
-    const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'];
-    if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) {
+    if (e.key === 'Enter') {
       e.preventDefault();
+      e.target.blur();
     }
   };
 
@@ -120,7 +127,7 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
                     onChange={onChange}
                     onKeyDown={handleAwbKeyDown}
                     onBlur={onAwbBlur}
-                    className={`h-[42px] w-full px-3 py-2 rounded-lg border text-xs font-sans font-mono transition-all focus:outline-none focus:ring-1 ${
+                    className={`h-[42px] w-full pl-3 pr-10 py-2 rounded-lg border text-xs font-sans font-mono transition-all focus:outline-none focus:ring-1 ${
                       errors.awbNumber
                         ? 'border-red-400 bg-red-50 focus:ring-red-300'
                         : 'border-fe-muted bg-white focus:border-fe-teal focus:ring-fe-teal'
@@ -128,10 +135,19 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
                     aria-invalid={!!errors.awbNumber}
                     aria-describedby={errors.awbNumber ? 'awb-error' : undefined}
                   />
-                  {awbDuplicateChecking && (
-                    <span className="absolute inset-y-0 right-2 flex items-center">
+                  {awbDuplicateChecking ? (
+                    <span className="absolute inset-y-0 right-3 flex items-center">
                       <span className="h-3.5 w-3.5 border-2 border-fe-teal border-t-transparent rounded-full animate-spin" />
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setScannerOpen(true)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-fe-gray hover:text-fe-teal transition-colors focus:outline-none"
+                      title="Scan AWB Barcode"
+                    >
+                      <Scan className="h-4.5 w-4.5" />
+                    </button>
                   )}
                 </div>
                 {errors.awbNumber && (
@@ -140,6 +156,17 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
                     {errors.awbNumber}
                   </p>
                 )}
+                <BarcodeScannerModal
+                  isOpen={scannerOpen}
+                  onClose={() => setScannerOpen(false)}
+                  onScan={(text) => {
+                    const clean = text.replace(/\D/g, '');
+                    onChange({ target: { name: 'awbNumber', value: clean } });
+                    setTimeout(() => {
+                      onAwbBlur();
+                    }, 100);
+                  }}
+                />
               </div>
 
               {/* Courier Partner */}

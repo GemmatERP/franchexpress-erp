@@ -43,9 +43,9 @@ export default function SearchPage() {
   const [selectedAwb, setSelectedAwb] = useState(null);
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
 
-  // Authorization check - only Admin and Employee allowed
+  // Authorization check - only Admin, Super Admin, and Employee allowed
   useEffect(() => {
-    if (!authLoading && role && role !== 'admin' && role !== 'employee') {
+    if (!authLoading && role && role !== 'admin' && role !== 'super_admin' && role !== 'employee') {
       router.replace('/dashboard');
     }
   }, [role, authLoading, router]);
@@ -103,7 +103,7 @@ export default function SearchPage() {
     router.push('/dashboard/consignments/edit');
   };
 
-  if (authLoading || (role !== 'admin' && role !== 'employee')) {
+  if (authLoading || (role !== 'admin' && role !== 'super_admin' && role !== 'employee')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />

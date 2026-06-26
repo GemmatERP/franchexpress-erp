@@ -32,6 +32,8 @@ const INITIAL_FORM = () => ({
   paymentMode: 'CASH',
   paymentDate: formatDateForInput(new Date()),
   amount: '',
+  cashAmount: '',
+  upiAmount: '',
   coverCharges: '',
   paidStatus: 'Paid',
   codProductValue: '',
@@ -98,7 +100,11 @@ export function ConsignmentForm() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let cleanValue = value;
+    if (name === 'awbNumber') {
+      cleanValue = value.replace(/\D/g, '');
+    }
+    setFormData((prev) => ({ ...prev, [name]: cleanValue }));
     setIsDirty(true);
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
@@ -239,6 +245,8 @@ export function ConsignmentForm() {
     const submissionData = {
       ...formData,
       amount: formData.amount ? Number(formData.amount) : 0,
+      cashAmount: formData.paymentMode === 'CASH + UPI' ? (Number(formData.cashAmount) || 0) : (formData.paymentMode === 'CASH' ? (Number(formData.amount) || 0) : 0),
+      upiAmount: formData.paymentMode === 'CASH + UPI' ? (Number(formData.upiAmount) || 0) : ((formData.paymentMode === 'UPI' || formData.paymentMode === 'GPAY' || formData.paymentMode === 'PAYTM') ? (Number(formData.amount) || 0) : 0),
       coverCharges: formData.coverCharges ? Number(formData.coverCharges) : 0,
       codProductValue: formData.codProductValue ? Number(formData.codProductValue) : 0,
       chargeableAmount,

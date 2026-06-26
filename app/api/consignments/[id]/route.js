@@ -3,6 +3,19 @@ export const dynamic = 'force-dynamic';
 import { adminDb, adminAuth, admin } from '../../../../lib/firebase-admin';
 import { invalidateStatsCache } from '../../../../lib/stats-cache';
 
+function safeToISO(val) {
+  if (!val) return null;
+  if (val.toDate && typeof val.toDate === 'function') {
+    return val.toDate().toISOString();
+  }
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? val : d.toISOString();
+  } catch (e) {
+    return val;
+  }
+}
+
 // Auth helper
 async function authenticate(req) {
   const authHeader = req.headers.get('authorization');
@@ -42,11 +55,11 @@ export async function GET(req, { params }) {
     }
 
     const data = doc.data();
-    // Convert timestamps
-    if (data.date) data.date = data.date.toDate().toISOString();
-    if (data.paymentDate) data.paymentDate = data.paymentDate.toDate().toISOString();
-    if (data.deliveredDate) data.deliveredDate = data.deliveredDate.toDate().toISOString();
-    if (data.createdAt) data.createdAt = data.createdAt.toDate().toISOString();
+    // Convert timestamps safely
+    if (data.date) data.date = safeToISO(data.date);
+    if (data.paymentDate) data.paymentDate = safeToISO(data.paymentDate);
+    if (data.deliveredDate) data.deliveredDate = safeToISO(data.deliveredDate);
+    if (data.createdAt) data.createdAt = safeToISO(data.createdAt);
 
     return NextResponse.json({ id: doc.id, ...data });
   } catch (err) {
@@ -79,7 +92,7 @@ export async function PUT(req, { params }) {
       } else if (body.deliveryStatus === 'Delivered') {
         payload.deliveredDate = admin.firestore.Timestamp.now();
       }
-    } else if (role === 'employee' || role === 'admin') {
+    } else if (role === 'employee' || role === 'admin' || role === 'super_admin') {
       // Admins and Employees have full editing access
       payload = { ...body };
       
@@ -104,10 +117,10 @@ export async function PUT(req, { params }) {
     // Fetch updated doc to return
     const updatedSnap = await docRef.get();
     const data = updatedSnap.data();
-    if (data.date) data.date = data.date.toDate().toISOString();
-    if (data.paymentDate) data.paymentDate = data.paymentDate.toDate().toISOString();
-    if (data.deliveredDate) data.deliveredDate = data.deliveredDate.toDate().toISOString();
-    if (data.createdAt) data.createdAt = data.createdAt.toDate().toISOString();
+    if (data.date) data.date = safeToISO(data.date);
+    if (data.paymentDate) data.paymentDate = safeToISO(data.paymentDate);
+    if (data.deliveredDate) data.deliveredDate = safeToISO(data.deliveredDate);
+    if (data.createdAt) data.createdAt = safeToISO(data.createdAt);
 
     return NextResponse.json({ id: updatedSnap.id, ...data });
   } catch (err) {
@@ -122,8 +135,8 @@ export async function DELETE(req, { params }) {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    // DELETE is strictly restricted to Admin role
-    if (role !== 'admin') {
+    // DELETE is strictly restricted to Admin/Super Admin role
+    if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden: Only Admins can delete consignments' }, { status: 403 });
     }
 

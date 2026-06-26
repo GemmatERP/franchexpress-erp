@@ -45,8 +45,8 @@ export async function GET(req) {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    // Restrict to admins and employees
-    if (role !== 'admin' && role !== 'employee') {
+    // Restrict to admins, super_admins and employees
+    if (role !== 'admin' && role !== 'super_admin' && role !== 'employee') {
       return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
     }
 
@@ -119,10 +119,23 @@ export async function GET(req) {
     const results = Array.from(matchedDocsMap.entries()).map(([id, data]) => {
       // Format Timestamps to ISO strings
       const formatted = { id, ...data };
-      if (formatted.date) formatted.date = formatted.date.toDate().toISOString();
-      if (formatted.paymentDate) formatted.paymentDate = formatted.paymentDate.toDate().toISOString();
-      if (formatted.deliveredDate) formatted.deliveredDate = formatted.deliveredDate.toDate().toISOString();
-      if (formatted.createdAt) formatted.createdAt = formatted.createdAt.toDate().toISOString();
+      const safeToISO = (val) => {
+        if (!val) return null;
+        if (val.toDate && typeof val.toDate === 'function') {
+          return val.toDate().toISOString();
+        }
+        try {
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? val : d.toISOString();
+        } catch (e) {
+          return val;
+        }
+      };
+
+      if (formatted.date) formatted.date = safeToISO(formatted.date);
+      if (formatted.paymentDate) formatted.paymentDate = safeToISO(formatted.paymentDate);
+      if (formatted.deliveredDate) formatted.deliveredDate = safeToISO(formatted.deliveredDate);
+      if (formatted.createdAt) formatted.createdAt = safeToISO(formatted.createdAt);
       return formatted;
     });
 

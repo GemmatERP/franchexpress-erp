@@ -37,9 +37,9 @@ export default function WhatsAppLogsPage() {
   const [directionFilter, setDirectionFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Authorization check - only Admin allowed
+  // Authorization check - only Admin/Super Admin allowed
   useEffect(() => {
-    if (!authLoading && role && role !== 'admin') {
+    if (!authLoading && role && role !== 'admin' && role !== 'super_admin') {
       router.replace('/dashboard');
     }
   }, [role, authLoading, router]);
@@ -70,7 +70,7 @@ export default function WhatsAppLogsPage() {
   }, [getHeaders, toast]);
 
   useEffect(() => {
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'super_admin') {
       fetchLogs();
     }
   }, [role, fetchLogs]);
@@ -140,7 +140,7 @@ export default function WhatsAppLogsPage() {
     return result;
   }, [logs, searchTerm, directionFilter, statusFilter]);
 
-  if (authLoading || role !== 'admin') {
+  if (authLoading || (role !== 'admin' && role !== 'super_admin')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />

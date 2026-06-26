@@ -177,7 +177,7 @@ export async function GET(req) {
 
     const data = pageDocs.map((doc) => {
       const d = doc.data();
-      if (d.date)          d.date          = d.date.toDate().toISOString();
+      if (d.date)          d.date          = d.date?.toDate?.()?.toISOString()   ?? d.date;
       if (d.paymentDate)   d.paymentDate   = d.paymentDate?.toDate?.()?.toISOString()   ?? d.paymentDate;
       if (d.deliveredDate) d.deliveredDate = d.deliveredDate?.toDate?.()?.toISOString() ?? d.deliveredDate;
       if (d.createdAt)     d.createdAt     = d.createdAt?.toDate?.()?.toISOString()     ?? d.createdAt;
@@ -205,7 +205,7 @@ export async function POST(req) {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    if (role !== 'admin' && role !== 'employee') {
+    if (role !== 'admin' && role !== 'super_admin' && role !== 'employee') {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 

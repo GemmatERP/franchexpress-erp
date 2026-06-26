@@ -11,7 +11,8 @@ import {
   Filter,
   RefreshCw,
   Package,
-  ArrowRight
+  ArrowRight,
+  Smartphone
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -42,9 +43,9 @@ export default function RevenueDashboard() {
   const { user, role, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // Redirect non-admins
+  // Redirect non-admins (super_admin has same access as admin)
   useEffect(() => {
-    if (!authLoading && role && role !== 'admin') {
+    if (!authLoading && role && role !== 'admin' && role !== 'super_admin') {
       router.replace('/dashboard');
     }
   }, [role, authLoading, router]);
@@ -107,7 +108,7 @@ export default function RevenueDashboard() {
   }, [user, filterType, fromDate, toDate, toast]);
 
   useEffect(() => {
-    if (!authLoading && role === 'admin') {
+    if (!authLoading && (role === 'admin' || role === 'super_admin')) {
       fetchRevenueStats();
     }
   }, [authLoading, role, filterType, fetchRevenueStats]);
@@ -117,7 +118,7 @@ export default function RevenueDashboard() {
     fetchRevenueStats();
   };
 
-  if (authLoading || (role && role !== 'admin')) {
+  if (authLoading || (role && role !== 'admin' && role !== 'super_admin')) {
     return (
       <div className="h-96 flex flex-col items-center justify-center">
         <Spinner size="lg" />
@@ -144,6 +145,7 @@ export default function RevenueDashboard() {
     paymentMode: [],
     partner: []
   };
+
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16 font-sans">
@@ -245,7 +247,7 @@ export default function RevenueDashboard() {
       </Card>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {/* Total Revenue */}
         <Card className="p-5 border border-fe-muted/20 shadow-sm relative overflow-hidden bg-gradient-to-tr from-teal-500/5 to-transparent">
           <div className="absolute right-3 top-3 p-2 rounded-lg bg-fe-teal/10 text-fe-teal">
@@ -280,6 +282,18 @@ export default function RevenueDashboard() {
             {loading ? <div className="h-6 w-20 bg-fe-bg animate-pulse rounded" /> : formatCurrency(metrics.cashRevenue)}
           </h3>
           <p className="text-[10px] text-fe-gray mt-1 leading-none">Bookings paid by cash/counter</p>
+        </Card>
+
+        {/* UPI Revenue */}
+        <Card className="p-5 border border-fe-muted/20 shadow-sm relative overflow-hidden">
+          <div className="absolute right-3 top-3 p-2 rounded-lg bg-violet-50 text-violet-500">
+            <Smartphone className="h-5 w-5" />
+          </div>
+          <span className="text-[10px] font-bold text-fe-gray uppercase tracking-wider font-mono">UPI Income</span>
+          <h3 className="text-xl font-bold text-fe-dark mt-4 font-heading">
+            {loading ? <div className="h-6 w-20 bg-fe-bg animate-pulse rounded" /> : formatCurrency(metrics.upiRevenue)}
+          </h3>
+          <p className="text-[10px] text-fe-gray mt-1 leading-none">GPay / Paytm / UPI payments</p>
         </Card>
 
         {/* Credit Revenue */}

@@ -124,6 +124,8 @@ export default function EditConsignmentPage() {
       paymentMode: formData.paymentMode,
       paymentDate: formData.paymentDate,
       amount: formData.amount ? Number(formData.amount) : 0,
+      cashAmount: formData.paymentMode === 'CASH + UPI' ? (Number(formData.cashAmount) || 0) : (formData.paymentMode === 'CASH' ? (Number(formData.amount) || 0) : 0),
+      upiAmount: formData.paymentMode === 'CASH + UPI' ? (Number(formData.upiAmount) || 0) : ((formData.paymentMode === 'UPI' || formData.paymentMode === 'GPAY' || formData.paymentMode === 'PAYTM') ? (Number(formData.amount) || 0) : 0),
       coverCharges: formData.coverCharges ? Number(formData.coverCharges) : 0,
       codProductValue: formData.codProductValue ? Number(formData.codProductValue) : 0,
       chargeableAmount,

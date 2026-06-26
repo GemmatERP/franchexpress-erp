@@ -83,8 +83,8 @@ export async function GET(req) {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    // RESTRICTED TO ADMIN ROLE ONLY
-    if (role !== 'admin') {
+    // RESTRICTED TO ADMIN/SUPER_ADMIN ROLE ONLY
+    if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
@@ -125,7 +125,7 @@ export async function GET(req) {
       .where('date', '>=', tsStart)
       .where('date', '<=', tsEnd)
       .orderBy('date', 'asc')
-      .select('date', 'amount', 'paymentMode', 'courierPartner', 'paidStatus', 'nature')
+      .select('date', 'amount', 'paymentMode', 'courierPartner', 'paidStatus', 'nature', 'awbNumber', 'consigneeName', 'consigneeCity', 'consignorName', 'sno', 'cashAmount', 'upiAmount')
       .get();
 
     let totalRevenue = 0;
@@ -134,6 +134,7 @@ export async function GET(req) {
     let cashRevenue = 0;
     let upiRevenue = 0;
     let otherRevenue = 0;
+    const upiConsignments = [];
 
     const partnerMap = {};
     const modeMap = {};
@@ -157,14 +158,41 @@ export async function GET(req) {
 
       // Group by payment mode
       const mode = (data.paymentMode || 'CASH').toUpperCase();
+      const cashPart = (data.cashAmount !== undefined && data.cashAmount !== null)
+        ? Number(data.cashAmount)
+        : (mode === 'CASH' ? amount : 0);
+      const upiPart = (data.upiAmount !== undefined && data.upiAmount !== null)
+        ? Number(data.upiAmount)
+        : ((mode === 'UPI' || mode === 'GPAY' || mode === 'PAYTM') ? amount : 0);
+      const creditPart = mode === 'CREDIT' ? amount : 0;
+
+      cashRevenue += cashPart;
+      upiRevenue += upiPart;
+      creditRevenue += creditPart;
+
       if (mode === 'CREDIT') {
-        creditRevenue += amount;
+        // Handled above
       } else if (mode === 'CASH') {
-        cashRevenue += amount;
-      } else if (mode === 'UPI' || mode === 'GPAY' || mode === 'PAYTM') {
-        upiRevenue += amount;
+        // Handled above
+      } else if (mode === 'UPI' || mode === 'GPAY' || mode === 'PAYTM' || mode === 'CASH + UPI') {
+        if (upiPart > 0) {
+          upiConsignments.push({
+            id: doc.id,
+            sno: data.sno || '',
+            awbNumber: data.awbNumber || '',
+            date: data.date?.toDate?.()?.toISOString() || null,
+            consignorName: data.consignorName || '',
+            consigneeName: data.consigneeName || '',
+            consigneeCity: data.consigneeCity || '',
+            courierPartner: data.courierPartner || '',
+            paymentMode: data.paymentMode || 'UPI',
+            amount: upiPart,
+            paidStatus: data.paidStatus || '',
+          });
+        }
       } else {
-        otherRevenue += amount;
+        const remaining = amount - cashPart - upiPart - creditPart;
+        otherRevenue += remaining > 0 ? remaining : 0;
       }
 
       modeMap[mode] = (modeMap[mode] || 0) + amount;
@@ -213,7 +241,8 @@ export async function GET(req) {
         dailyTrend: dailyTrendChart,
         paymentMode: paymentModeChart,
         partner: partnerChart
-      }
+      },
+      upiConsignments
     };
 
     // Cache result for 10 minutes

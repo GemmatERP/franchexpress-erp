@@ -38,9 +38,9 @@ export default function SyncLogsPage() {
   const [syncing, setSyncing] = useState(false);
   const [expandedLogId, setExpandedLogId] = useState(null);
 
-  // Authorization check - only Admin allowed
+  // Authorization check - only Admin/Super Admin allowed
   useEffect(() => {
-    if (!authLoading && role && role !== 'admin') {
+    if (!authLoading && role && role !== 'admin' && role !== 'super_admin') {
       router.replace('/dashboard');
     }
   }, [role, authLoading, router]);
@@ -64,7 +64,7 @@ export default function SyncLogsPage() {
   }, [getHeaders, toast]);
 
   useEffect(() => {
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'super_admin') {
       fetchLogs();
     }
   }, [role, fetchLogs]);
@@ -112,7 +112,7 @@ export default function SyncLogsPage() {
     });
   };
 
-  if (authLoading || role !== 'admin') {
+  if (authLoading || (role !== 'admin' && role !== 'super_admin')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />

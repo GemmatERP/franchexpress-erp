@@ -215,6 +215,11 @@ export default function ConsignmentDetailPage({ params }) {
               <CreditCard className="h-3.5 w-3.5 text-fe-gray" />
               Mode: {consignment.paymentMode}
             </p>
+            {consignment.paymentMode === 'CASH + UPI' && (
+              <p className="text-[10px] text-fe-gray font-mono">
+                (Cash: {formatCurrency(consignment.cashAmount || 0)} / UPI: {formatCurrency(consignment.upiAmount || 0)})
+              </p>
+            )}
             <p className="text-fe-gray">Status: {consignment.paidStatus}</p>
           </div>
           <div className="space-y-1 font-sans text-xs">

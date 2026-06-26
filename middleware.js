@@ -23,8 +23,8 @@ export function middleware(request) {
         return NextResponse.redirect(new URL('/dashboard/delivery', request.url));
       }
     } else {
-      // Admins and Employees are not allowed on /dashboard/delivery directly unless they are Admin
-      if (pathname.startsWith('/dashboard/delivery') && role !== 'admin') {
+      // Admins and Super Admins can access /dashboard/delivery; Employees and others cannot
+      if (pathname.startsWith('/dashboard/delivery') && role !== 'admin' && role !== 'super_admin') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }

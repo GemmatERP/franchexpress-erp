@@ -34,14 +34,15 @@ export function PaymentSection({ formData, onChange, errors, sectionNumber = 4 }
 
   const toggleSection = () => setIsOpen(!isOpen);
 
-  const paymentModeOptions = ['CASH', 'UPI', 'To Pay', 'CREDIT', 'COD'];
+  const paymentModeOptions = ['CASH', 'UPI', 'CASH + UPI', 'To Pay', 'CREDIT', 'COD'];
 
-  const isCashOrUpi = formData.paymentMode === 'CASH' || formData.paymentMode === 'UPI';
+  const isCashOrUpi = formData.paymentMode === 'CASH' || formData.paymentMode === 'UPI' || formData.paymentMode === 'CASH + UPI';
   const isCOD = formData.paymentMode === 'COD';
+  const isSplit = formData.paymentMode === 'CASH + UPI';
   const showPaymentDate = isCashOrUpi || formData.paidStatus === 'Paid';
   const paymentDateEditable = !isCashOrUpi;
 
-  // Whenever mode switches to CASH/UPI, auto-lock paid status and set today's date
+  // Whenever mode switches to CASH/UPI/CASH + UPI, auto-lock paid status and set today's date
   useEffect(() => {
     if (isCashOrUpi) {
       if (formData.paidStatus !== 'Paid') {
@@ -50,6 +51,32 @@ export function PaymentSection({ formData, onChange, errors, sectionNumber = 4 }
       const today = formatDateForInput(new Date());
       if (!formData.paymentDate || formData.paymentDate !== today) {
         onChange({ target: { name: 'paymentDate', value: today } });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.paymentMode]);
+
+  // Automatically sum cashAmount and upiAmount if CASH + UPI is selected
+  useEffect(() => {
+    if (isSplit) {
+      const cash = Number(formData.cashAmount) || 0;
+      const upi = Number(formData.upiAmount) || 0;
+      const total = cash + upi;
+      if (Number(formData.amount) !== total) {
+        onChange({ target: { name: 'amount', value: total.toString() } });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.cashAmount, formData.upiAmount, isSplit]);
+
+  // Clear cashAmount and upiAmount when switching away from CASH + UPI
+  useEffect(() => {
+    if (formData.paymentMode !== 'CASH + UPI') {
+      if (formData.cashAmount !== undefined && formData.cashAmount !== '') {
+        onChange({ target: { name: 'cashAmount', value: '' } });
+      }
+      if (formData.upiAmount !== undefined && formData.upiAmount !== '') {
+        onChange({ target: { name: 'upiAmount', value: '' } });
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,16 +194,54 @@ export function PaymentSection({ formData, onChange, errors, sectionNumber = 4 }
                   </div>
                 )}
 
-                {/* Amount */}
-                <Input
-                  label="Amount (₹)"
-                  name="amount"
-                  type="number"
-                  placeholder="0"
-                  value={formData.amount}
-                  onChange={onChange}
-                  error={errors.amount}
-                />
+                {/* Amount or Split Cash/UPI Inputs */}
+                {isSplit ? (
+                  <>
+                    <Input
+                      label="Cash Part (₹)"
+                      name="cashAmount"
+                      type="number"
+                      placeholder="0"
+                      value={formData.cashAmount || ''}
+                      onChange={onChange}
+                      error={errors.cashAmount}
+                      required
+                    />
+                    <Input
+                      label="UPI Part (₹)"
+                      name="upiAmount"
+                      type="number"
+                      placeholder="0"
+                      value={formData.upiAmount || ''}
+                      onChange={onChange}
+                      error={errors.upiAmount}
+                      required
+                    />
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <label className="text-xs font-semibold text-fe-dark font-sans">
+                        Total Amount (₹)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.amount || '0'}
+                        readOnly
+                        disabled
+                        className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-fe-bg text-fe-dark font-mono font-bold text-xs cursor-not-allowed"
+                      />
+                      <p className="text-[10px] text-fe-gray font-sans">Cash + UPI parts</p>
+                    </div>
+                  </>
+                ) : (
+                  <Input
+                    label="Amount (₹)"
+                    name="amount"
+                    type="number"
+                    placeholder="0"
+                    value={formData.amount}
+                    onChange={onChange}
+                    error={errors.amount}
+                  />
+                )}
 
                 {/* Cover Charges */}
                 <Input

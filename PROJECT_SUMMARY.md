@@ -35,6 +35,7 @@
 | 19 | Post-Revamp Follow-up Bug Fixes & Query Fallbacks | ✅ Done |
 | 20 | WhatsApp Messaging Hub & Inbound Reply Auditing | ✅ Done |
 | 21 | Axis Labels & Timezone Stats Alignment | ✅ Done |
+| 22 | UPI Revenue, Split Payments, and Barcode/QR Scanner | ✅ Done |
 
 ---
 
@@ -391,6 +392,25 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 
 ---
 
+### ✅ PHASE 22 — UPI Revenue KPI Card, Split Payments, and Barcode/QR Scanner Integration
+
+**Goal**: Implement cash+UPI split payments, import 2026 data, add camera barcode scanning to the AWB input box, and resolve related SSR/decoding and API formatting bugs.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Replaced the large UPI transactions table at the bottom of the Revenue page with a clean UPI Income KPI card, and adjusted grid layouts to fit all KPI blocks cleanly | ✅ Done |
+| 2 | Performed clean deletion of all 3,230 old consignment records and counter indices, then imported 3,415 new records from the new 2026 Excel tracker spreadsheet, auto-correcting calendar years to 2026 | ✅ Done |
+| 3 | Added a 'CASH + UPI' split payment mode with dual parts inputs (Cash Part, UPI Part) auto-calculating total amount, and integrated it into the new consignment form, edit form, details display, and exports | ✅ Done |
+| 4 | Fixed copy-pasting AWB numbers by allowing shortcuts (Cmd/Ctrl + V, C, A) in the keypress handler, and sanitizing AWB input in onChange to strip non-digits | ✅ Done |
+| 5 | Integrated camera-based barcode scanning using `html5-qrcode` inside a popup modal (complete with a horizontal red laser scan guide overlay) | ✅ Done |
+| 6 | Prevented server-side pre-rendering errors of `html5-qrcode` by importing the scanner component dynamically with `{ ssr: false }` in the parent ShipmentInfo form | ✅ Done |
+| 7 | Enabled full-frame scanning by omitting `qrbox` configuration to prevent linear barcodes (like CODE-128) from failing to decode when their margins got cropped | ✅ Done |
+| 8 | Configured explicit format filtering (`CODE_128`, `CODE_39`, `EAN_13`, `EAN_8`, `QR_CODE`) to improve scanning speed and robustness | ✅ Done |
+| 9 | Prevented form submission on scanner `Enter` suffix commands by intercepting the keypress and triggering input blur validation instead | ✅ Done |
+| 10 | Created a `safeToISO` date formatting wrapper in `/api/consignments/search`, `/api/consignments/[id]`, `/api/consignments`, `/api/consignments/stats`, and `/api/sync-logs` API routes to safely parse dates regardless of whether they are Firestore Timestamps or strings | ✅ Done |
+
+---
+
 ## 📂 Key Files Modified / Created
 
 | File | Change |
@@ -433,6 +453,8 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | `lib/ConsignmentEditContext.jsx` | **[NEW]** React Context keeping in-memory and sessionStorage backup of active edit IDs |
 | `scratch/fix_existing_docs.js` | **[NEW]** Migration script for WhatsApp Flow feedback formatting |
 | `scratch/check_consignments_dates.js` | **[NEW]** Diagnostics script for consignment booking dates |
+| `components/consignment/BarcodeScannerModal.jsx` | **[NEW]** Camera-based Barcode and QR Code scanner component using `html5-qrcode` |
+| `scratch/import_xls.mjs` | **[NEW]** Import script for parsing, year-correcting, and importing 2026 consignment entries from Excel |
 
 ---
 

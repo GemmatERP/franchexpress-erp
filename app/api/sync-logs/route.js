@@ -35,7 +35,7 @@ export async function GET(req) {
     const decodedToken = await authenticate(req);
     const role = await getUserRole(decodedToken.uid);
 
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
@@ -47,8 +47,8 @@ export async function GET(req) {
     const logs = [];
     logsSnap.forEach(doc => {
       const data = doc.data();
-      // Format timestamps
-      if (data.timestamp) data.timestamp = data.timestamp.toDate().toISOString();
+      // Format timestamps safely
+      if (data.timestamp) data.timestamp = data.timestamp?.toDate?.()?.toISOString() ?? data.timestamp;
       logs.push({
         id: doc.id,
         ...data
