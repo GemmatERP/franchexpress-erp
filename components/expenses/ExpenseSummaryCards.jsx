@@ -14,16 +14,16 @@ function SummaryCard({ icon: Icon, label, value, sub, color = 'teal', trend }) {
     gray: 'bg-gray-100 text-gray-500',
   };
   return (
-    <div className="bg-white border border-fe-muted/20 rounded-2xl p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`p-3 rounded-xl shrink-0 ${colorMap[color] || colorMap.gray}`}>
-        <Icon className="h-5 w-5" />
+    <div className="bg-white border border-fe-muted/20 rounded-2xl p-3.5 sm:p-5 flex items-start gap-2.5 sm:gap-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 ${colorMap[color] || colorMap.gray}`}>
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-fe-gray font-sans uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold text-fe-dark font-heading mt-0.5">{value}</p>
-        {sub && <p className="text-[11px] text-fe-gray font-sans mt-1 break-words">{sub}</p>}
+        <p className="text-[10px] sm:text-[11px] text-fe-gray font-sans uppercase tracking-wide">{label}</p>
+        <p className="text-lg sm:text-xl font-bold text-fe-dark font-heading mt-0.5">{value}</p>
+        {sub && <p className="text-[10px] sm:text-[11px] text-fe-gray font-sans mt-1 break-words">{sub}</p>}
         {trend !== undefined && (
-          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold mt-1 ${trend >= 0 ? 'text-red-500' : 'text-green-600'}`}>
+          <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold mt-1 ${trend >= 0 ? 'text-red-500' : 'text-green-600'}`}>
             {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(trend).toFixed(1)}% vs last month
           </span>
