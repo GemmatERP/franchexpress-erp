@@ -86,7 +86,7 @@ export function ConsignmentForm() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateId, setDuplicateId] = useState(null);
 
-  // ── Unsaved changes guard: intercept beforeunload ───────────────────────────
+  // ── Unsaved changes guard: intercept beforeunload & client-side clicks ────────
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) {
@@ -94,8 +94,34 @@ export function ConsignmentForm() {
         e.returnValue = '';
       }
     };
+
+    const handleClientNavigation = (e) => {
+      if (!isDirty) return;
+      
+      const anchor = e.target.closest('a');
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        return;
+      }
+
+      // Check if it's a relative local navigation route
+      if (href.startsWith('/')) {
+        e.preventDefault();
+        e.stopPropagation();
+        pendingNavRef.current = href;
+        setShowUnsaved(true);
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('click', handleClientNavigation, true);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('click', handleClientNavigation, true);
+    };
   }, [isDirty]);
 
   const handleInputChange = (e) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Truck, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ import { TrackingTimeline } from '../../../../components/consignment/TrackingTim
 import { EditShipmentSection } from '../../../../components/consignment/EditShipmentSection';
 import { EditReadOnlySection } from '../../../../components/consignment/EditReadOnlySection';
 import { PaymentSection } from '../../../../components/consignment/PaymentSection';
+import { UnsavedChangesModal } from '../../../../components/consignment/UnsavedChangesModal';
 import { useConsignmentEdit } from '../../../../lib/ConsignmentEditContext';
 import { useConsignments } from '../../../../hooks/useConsignments';
 import { useTracking } from '../../../../hooks/useTracking';
@@ -45,6 +46,9 @@ export default function EditConsignmentPage() {
   const [errors, setErrors] = useState({});
   const [deliveryOpen, setDeliveryOpen] = useState(true);
   const [trackingOpen, setTrackingOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showUnsaved, setShowUnsaved] = useState(false);
+  const pendingNavRef = useRef(null);
 
   // ── Guard: if no edit context, redirect to consignments list ──────────────
   useEffect(() => {
@@ -93,9 +97,66 @@ export default function EditConsignmentPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Unsaved changes guard: intercept beforeunload & client-side clicks ────────
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handleClientNavigation = (e) => {
+      if (!isDirty) return;
+      
+      const anchor = e.target.closest('a');
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        return;
+      }
+
+      if (href.startsWith('/')) {
+        e.preventDefault();
+        e.stopPropagation();
+        pendingNavRef.current = href;
+        setShowUnsaved(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('click', handleClientNavigation, true);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('click', handleClientNavigation, true);
+    };
+  }, [isDirty]);
+
+  const handleCopyAndStay = () => {
+    try {
+      const text = JSON.stringify(formData, null, 2);
+      navigator.clipboard.writeText(text);
+      toast('Form data copied to clipboard', 'success');
+    } catch (_) {
+      toast('Could not access clipboard', 'error');
+    }
+    setShowUnsaved(false);
+  };
+
+  const handleDiscardAndLeave = () => {
+    setIsDirty(false);
+    setShowUnsaved(false);
+    const href = pendingNavRef.current || `/dashboard/consignments/${consignment?.id}`;
+    pendingNavRef.current = null;
+    router.push(href);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -138,6 +199,7 @@ export default function EditConsignmentPage() {
     try {
       await updateConsignment(editId || consignment?.id, updatePayload);
       toast(`Consignment ${consignment?.sno} updated successfully`, 'success');
+      setIsDirty(false);
 
       // Trigger status notification
       try {
@@ -180,7 +242,14 @@ export default function EditConsignmentPage() {
       <div className="sticky top-16 z-10 bg-fe-bg py-4 border-b border-fe-muted/10 flex flex-wrap justify-between items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push(`/dashboard/consignments/${consignment?.id}`)}
+          onClick={() => {
+            if (isDirty) {
+              pendingNavRef.current = `/dashboard/consignments/${consignment?.id}`;
+              setShowUnsaved(true);
+            } else {
+              router.push(`/dashboard/consignments/${consignment?.id}`);
+            }
+          }}
           className="inline-flex items-center gap-1 text-xs font-bold text-fe-gray hover:text-fe-dark transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -351,6 +420,14 @@ export default function EditConsignmentPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Unsaved Changes Modal */}
+      <UnsavedChangesModal
+        isOpen={showUnsaved}
+        onClose={() => setShowUnsaved(false)}
+        onCopyAndStay={handleCopyAndStay}
+        onDiscard={handleDiscardAndLeave}
+      />
     </div>
   );
 }
