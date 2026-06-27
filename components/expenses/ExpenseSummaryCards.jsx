@@ -18,10 +18,10 @@ function SummaryCard({ icon: Icon, label, value, sub, color = 'teal', trend }) {
       <div className={`p-3 rounded-xl shrink-0 ${colorMap[color] || colorMap.gray}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <div className="min-w-0">
-        <p className="text-[11px] text-fe-gray font-sans uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold text-fe-dark font-heading mt-0.5">{value}</p>
-        {sub && <p className="text-[11px] text-fe-gray font-sans mt-1">{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-fe-gray font-sans uppercase tracking-wide truncate" title={label}>{label}</p>
+        <p className="text-xl font-bold text-fe-dark font-heading mt-0.5 truncate" title={value}>{value}</p>
+        {sub && <p className="text-[11px] text-fe-gray font-sans mt-1 truncate" title={sub}>{sub}</p>}
         {trend !== undefined && (
           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold mt-1 ${trend >= 0 ? 'text-red-500' : 'text-green-600'}`}>
             {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -94,8 +94,8 @@ export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth }) {
       <SummaryCard
         icon={BarChart2}
         label="Top Category"
-        value={topCat ? topCat[0].split(' ')[0] : '—'}
-        sub={topCat ? formatCurrency(topCat[1]) : 'No data'}
+        value={topCat ? formatCurrency(topCat[1]) : '—'}
+        sub={topCat ? topCat[0] : 'No data'}
         color="teal"
       />
       <SummaryCard
