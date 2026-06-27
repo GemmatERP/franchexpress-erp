@@ -92,12 +92,12 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
                 <input
                   type="date"
                   name="date"
+                  max={todayStr}
                   value={formData.date || todayStr}
-                  readOnly
-                  disabled
-                  className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-fe-bg text-fe-gray text-xs font-sans cursor-not-allowed opacity-70"
+                  onChange={onChange}
+                  className="h-[42px] px-3 py-2 rounded-lg border border-fe-muted bg-white text-fe-dark text-xs font-sans focus:outline-none focus:ring-2 focus:ring-fe-teal/30"
                 />
-                <p className="text-[10px] text-fe-gray font-sans">Auto-set to today</p>
+                <p className="text-[10px] text-fe-gray font-sans">Today or past booking dates only</p>
               </div>
 
               {/* Voucher Type */}
