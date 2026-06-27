@@ -36,6 +36,7 @@ export async function GET(req) {
       const d = doc.data();
       return {
         id: doc.id, ...d,
+        entryType: d.entryType || 'DR',
         date: d.date?.toDate ? d.date.toDate().toISOString() : d.date,
         createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : d.createdAt,
       };
@@ -50,8 +51,8 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const decoded = await authenticate(req);
-    const { date, particulars, category, amount, notes } = await req.json();
-    if (!date || !particulars || !category || amount === undefined)
+    const { date, particulars, category, amount, notes, entryType } = await req.json();
+    if (!date || !particulars || amount === undefined)
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 
     const dateObj = new Date(date); dateObj.setHours(12, 0, 0, 0);
@@ -59,8 +60,9 @@ export async function POST(req) {
       date: admin.firestore.Timestamp.fromDate(dateObj),
       dateString: date.slice(0, 10),
       particulars: particulars.trim(),
-      category,
+      category: category || 'Miscellaneous',
       amount: Number(amount),
+      entryType: entryType || 'DR', // 'DR' or 'CR'
       notes: notes?.trim() || '',
       createdBy: decoded.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),

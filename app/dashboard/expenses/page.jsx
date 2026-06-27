@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   IndianRupee, RefreshCw, Filter, Calendar,
-  LayoutDashboard, TrendingUp, ListChecks
+  TrendingUp, ListChecks, PlusCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
@@ -12,10 +12,10 @@ import { useExpenses } from '../../../hooks/useExpenses';
 import { useToast } from '../../../hooks/useToast';
 import { Spinner } from '../../../components/ui/Spinner';
 import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
 import { ExpenseSummaryCards } from '../../../components/expenses/ExpenseSummaryCards';
-import { CashRegisterPanel } from '../../../components/expenses/CashRegisterPanel';
-import { ExpenseEntryForm } from '../../../components/expenses/ExpenseEntryForm';
+import { BalanceCard } from '../../../components/expenses/BalanceCard';
+import { AddTransactionModal } from '../../../components/expenses/AddTransactionModal';
+import { TransactionTimeline } from '../../../components/expenses/TransactionTimeline';
 import { ExpenseTable } from '../../../components/expenses/ExpenseTable';
 import {
   MonthlyExpenseChart,
@@ -26,9 +26,9 @@ import {
 import { formatDateForInput } from '../../../lib/utils';
 
 const TABS = [
-  { id: 'today', label: 'Today', icon: Calendar },
+  { id: 'today', label: 'Today Ledger', icon: Calendar },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-  { id: 'log', label: 'Full Log', icon: ListChecks },
+  { id: 'log', label: 'All Expenses Log', icon: ListChecks },
 ];
 
 function getMonthRange(offsetMonths = 0) {
@@ -56,6 +56,7 @@ export default function ExpensesPage() {
     buildCategoryData,
     buildDailyData,
     buildMonthlyData,
+    calculateDayBalance,
   } = useExpenses();
 
   // Redirect if not admin
@@ -69,6 +70,7 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [cashRegister, setCashRegister] = useState([]);
   const [initialized, setInitialized] = useState(false);
+  const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
   // Filters
   const today = formatDateForInput(new Date());
@@ -81,7 +83,6 @@ export default function ExpensesPage() {
   // Load all data
   const loadAll = useCallback(async () => {
     try {
-      // Load 6 months of data for analytics + current month for log
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
       sixMonthsAgo.setDate(1);
@@ -109,18 +110,17 @@ export default function ExpensesPage() {
   const handleAddExpense = async (data) => {
     try {
       await addExpense(data);
-      toast('Expense saved', 'success');
-      loadAll();
+      toast('Transaction saved successfully', 'success');
+      await loadAll();
     } catch (err) {
       toast(err.message, 'error');
     }
   };
 
   const handleDeleteExpense = async (id) => {
-    if (!confirm('Delete this expense?')) return;
     try {
       await deleteExpense(id);
-      toast('Expense deleted', 'success');
+      toast('Transaction deleted', 'success');
       setExpenses((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       toast(err.message, 'error');
@@ -130,30 +130,42 @@ export default function ExpensesPage() {
   const handleAddCash = async (data) => {
     try {
       await addCashEntry(data);
-      toast(`${data.type === 'opening' ? 'Opening' : 'Closing'} balance recorded`, 'success');
-      loadAll();
+      toast(`${data.type === 'initial' ? 'Initial cash' : 'Cash addition'} recorded`, 'success');
+      await loadAll();
     } catch (err) {
       toast(err.message, 'error');
     }
   };
 
   const handleDeleteCash = async (id) => {
-    if (!confirm('Delete this cash entry?')) return;
     try {
       await deleteCashEntry(id);
-      toast('Cash entry deleted', 'success');
+      toast('Cash ledger entry deleted', 'success');
       setCashRegister((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       toast(err.message, 'error');
     }
   };
 
-  // Derived data
-  const todayExpenses = expenses.filter((e) => e.date?.slice(0, 10) === selectedDate);
+  // Balance & suggestions calculations
+  const daySummary = calculateDayBalance(selectedDate, expenses, cashRegister);
+
+  const getYesterdaySuggest = useCallback(() => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    const yesterdayStr = d.toISOString().slice(0, 10);
+    const summary = calculateDayBalance(yesterdayStr, expenses, cashRegister);
+    return summary.hasInitial ? summary.balance : 0;
+  }, [selectedDate, expenses, cashRegister, calculateDayBalance]);
+
+  const suggestedOpening = getYesterdaySuggest();
+
+  // Filtered expenses for full list
   const filteredExpenses = expenses.filter((e) => {
     const d = e.date?.slice(0, 10) || '';
     return d >= fromDate && d <= toDate;
   });
+
   const categoryData = buildCategoryData(filteredExpenses);
   const dailyData = buildDailyData(filteredExpenses);
   const monthlyData = buildMonthlyData(expenses);
@@ -163,7 +175,7 @@ export default function ExpensesPage() {
     return (
       <div className="h-96 flex flex-col items-center justify-center">
         <Spinner size="lg" />
-        <p className="text-xs text-fe-gray font-sans mt-3">Loading expense data...</p>
+        <p className="text-xs text-fe-gray font-sans mt-3">Loading expense ledger...</p>
       </div>
     );
   }
@@ -175,9 +187,9 @@ export default function ExpensesPage() {
         <div>
           <h1 className="text-2xl font-bold text-fe-dark font-heading flex items-center gap-2">
             <IndianRupee className="h-6 w-6 text-fe-teal" />
-            Expense Dashboard
+            Cash & Expense Ledger
           </h1>
-          <p className="text-xs text-fe-gray font-sans mt-0.5">Track daily expenses and petty cash flow</p>
+          <p className="text-xs text-fe-gray font-sans mt-0.5">Track petty cash, client credits, and operational debits</p>
         </div>
         <button
           onClick={loadAll}
@@ -227,38 +239,45 @@ export default function ExpensesPage() {
             transition={{ duration: 0.2 }}
             className="space-y-5"
           >
-            {/* Date picker */}
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-semibold text-fe-gray font-sans">Date:</label>
-              <input
-                type="date"
-                value={selectedDate}
-                max={today}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="text-sm font-sans border border-fe-muted/30 rounded-lg px-3 py-1.5 text-fe-dark focus:outline-none focus:ring-2 focus:ring-fe-teal/30"
-              />
+            {/* Date picker & Add Transaction trigger */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-semibold text-fe-gray font-sans">Date:</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  max={today}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="text-sm font-sans border border-fe-muted/30 rounded-lg px-3 py-1.5 text-fe-dark focus:outline-none focus:ring-2 focus:ring-fe-teal/30"
+                />
+              </div>
+
+              {daySummary.hasInitial && (
+                <Button
+                  variant="primary"
+                  onClick={() => setIsTxModalOpen(true)}
+                  className="flex items-center gap-1.5"
+                >
+                  <PlusCircle className="h-4 w-4" /> Add Transaction (DR/CR)
+                </Button>
+              )}
             </div>
 
-            {/* Cash Register */}
-            <CashRegisterPanel
-              date={selectedDate}
-              cashEntries={cashRegister}
-              onAdd={handleAddCash}
-              onDelete={handleDeleteCash}
+            {/* Balance Card (Initial balance & Adjustments) */}
+            <BalanceCard
+              daySummary={daySummary}
+              suggestedOpening={suggestedOpening}
+              onAddCash={handleAddCash}
               loading={loading}
             />
 
-            {/* Expense Entry */}
-            <ExpenseEntryForm
+            {/* Daily transaction timeline */}
+            <TransactionTimeline
               date={selectedDate}
-              onSave={handleAddExpense}
-              loading={loading}
-            />
-
-            {/* Today's log */}
-            <ExpenseTable
-              expenses={todayExpenses}
-              onDelete={handleDeleteExpense}
+              expenses={expenses}
+              cashRegister={cashRegister}
+              onDeleteExpense={handleDeleteExpense}
+              onDeleteCash={handleDeleteCash}
               canDelete={true}
             />
           </motion.div>
@@ -341,13 +360,22 @@ export default function ExpensesPage() {
             </div>
 
             <ExpenseTable
-              expenses={filteredExpenses}
+              expenses={filteredExpenses.filter((e) => e.entryType !== 'CR')}
               onDelete={handleDeleteExpense}
               canDelete={true}
             />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Popup Form Modal */}
+      <AddTransactionModal
+        isOpen={isTxModalOpen}
+        onClose={() => setIsTxModalOpen(false)}
+        onSave={handleAddExpense}
+        date={selectedDate}
+        loading={loading}
+      />
     </div>
   );
 }

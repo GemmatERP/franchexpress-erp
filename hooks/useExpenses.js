@@ -163,6 +163,7 @@ export function useExpenses() {
   function buildCategoryData(expenses) {
     const map = {};
     for (const e of expenses) {
+      if (e.entryType === 'CR') continue; // only show DR (debits/expenses) in category analysis
       if (!map[e.category]) map[e.category] = 0;
       map[e.category] += Number(e.amount) || 0;
     }
@@ -174,6 +175,7 @@ export function useExpenses() {
   function buildDailyData(expenses) {
     const map = {};
     for (const e of expenses) {
+      if (e.entryType === 'CR') continue;
       const d = e.date ? e.date.slice(0, 10) : '';
       if (!d) continue;
       if (!map[d]) map[d] = 0;
@@ -191,6 +193,7 @@ export function useExpenses() {
   function buildMonthlyData(expenses) {
     const map = {};
     for (const e of expenses) {
+      if (e.entryType === 'CR') continue;
       const m = e.date ? e.date.slice(0, 7) : '';
       if (!m) continue;
       if (!map[m]) map[m] = 0;
@@ -203,6 +206,39 @@ export function useExpenses() {
         label: new Date(month + '-01').toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
         amount,
       }));
+  }
+
+  // ── Calculate Day Balance ──────────────────────────────────────────────────
+  function calculateDayBalance(dateStr, allExpenses, allCashRegister) {
+    const dayCash = allCashRegister.filter((r) => r.dateString === dateStr || r.date?.slice(0, 10) === dateStr);
+    const dayExpenses = allExpenses.filter((e) => e.dateString === dateStr || e.date?.slice(0, 10) === dateStr);
+
+    const initial = dayCash
+      .filter((r) => r.type === 'initial' || r.type === 'opening')
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+    const added = dayCash
+      .filter((r) => r.type === 'add')
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+    const debits = dayExpenses
+      .filter((e) => e.entryType === 'DR')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const credits = dayExpenses
+      .filter((e) => e.entryType === 'CR')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const balance = initial + added + credits - debits;
+
+    return {
+      initial,
+      added,
+      debits,
+      credits,
+      balance,
+      hasInitial: dayCash.some((r) => r.type === 'initial' || r.type === 'opening')
+    };
   }
 
   return {
@@ -218,5 +254,6 @@ export function useExpenses() {
     buildCategoryData,
     buildDailyData,
     buildMonthlyData,
+    calculateDayBalance,
   };
 }
