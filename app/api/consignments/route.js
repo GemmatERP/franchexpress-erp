@@ -244,6 +244,36 @@ export async function POST(req) {
 
     const docRef = await adminDb.collection('consignments').add(docData);
 
+    // If cash is collected, automatically create a Credit (CR) entry in the cash/expense ledger
+    let cashPaid = 0;
+    if (body.paymentMode === 'CASH') {
+      cashPaid = Number(body.amount) || 0;
+    } else if (body.paymentMode === 'CASH + UPI') {
+      cashPaid = Number(body.cashAmount) || 0;
+    }
+
+    if (cashPaid > 0) {
+      try {
+        const dateStr = body.date ? body.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+        const dateObj = body.date ? new Date(body.date) : new Date();
+        dateObj.setHours(12, 0, 0, 0);
+
+        await adminDb.collection('expenses').add({
+          date: admin.firestore.Timestamp.fromDate(dateObj),
+          dateString: dateStr,
+          particulars: `Voucher Cash - AWB ${body.awbNumber || ''}`,
+          category: 'Revenue / Cash Inflow',
+          amount: cashPaid,
+          entryType: 'CR',
+          notes: `Auto-generated from consignment booking (SNO: ${docData.sno})`,
+          createdBy: decodedToken.uid,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (eError) {
+        console.error('Failed to auto-create cash ledger entry:', eError.message);
+      }
+    }
+
     // Invalidate dashboard stats cache so next load reflects new data
     invalidateStatsCache();
 
