@@ -106,8 +106,22 @@ export async function GET(req) {
         throw err;
       }
     }
+    // Prioritize by lastSyncedAt (ascending) to cycle through all pending items, and limit to 15 to avoid timeout
+    filteredDocs.sort((a, b) => {
+      const ad = a.data();
+      const bd = b.data();
+      const at = ad.lastSyncedAt?.toDate ? ad.lastSyncedAt.toDate().getTime() : 0;
+      const bt = bd.lastSyncedAt?.toDate ? bd.lastSyncedAt.toDate().getTime() : 0;
+      if (at === bt) {
+        const adt = ad.date?.toDate ? ad.date.toDate().getTime() : new Date(ad.date || 0).getTime();
+        const bdt = bd.date?.toDate ? bd.date.toDate().getTime() : new Date(bd.date || 0).getTime();
+        return bdt - adt;
+      }
+      return at - bt;
+    });
 
-    const pendingCount = filteredDocs.length;
+    const docsToProcess = filteredDocs.slice(0, 15);
+    const pendingCount = docsToProcess.length;
     
     if (pendingCount === 0) {
       const durationMs = Date.now() - startTime;
@@ -143,7 +157,7 @@ export async function GET(req) {
     let batchHasWrites = false;
 
     // Use sequential queries with a small delay to avoid overwhelming the proxy
-    for (const doc of filteredDocs) {
+    for (const doc of docsToProcess) {
       const data = doc.data();
       const awb = data.awbNumber;
       const oldStatus = data.deliveryStatus;
@@ -240,6 +254,8 @@ export async function GET(req) {
               result: 'updated'
             });
           } else {
+            batch.update(doc.ref, { lastSyncedAt: admin.firestore.Timestamp.now() });
+            batchHasWrites = true;
             skippedCount++;
             details.push({
               awb,
@@ -249,6 +265,8 @@ export async function GET(req) {
             });
           }
         } else {
+          batch.update(doc.ref, { lastSyncedAt: admin.firestore.Timestamp.now() });
+          batchHasWrites = true;
           failedCount++;
           details.push({
             awb,
@@ -258,6 +276,8 @@ export async function GET(req) {
           });
         }
       } catch (err) {
+        batch.update(doc.ref, { lastSyncedAt: admin.firestore.Timestamp.now() });
+        batchHasWrites = true;
         failedCount++;
         details.push({
           awb,
