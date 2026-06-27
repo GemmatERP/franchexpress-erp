@@ -36,6 +36,7 @@
 | 20 | WhatsApp Messaging Hub & Inbound Reply Auditing | ✅ Done |
 | 21 | Axis Labels & Timezone Stats Alignment | ✅ Done |
 | 22 | UPI Revenue, Split Payments, and Barcode/QR Scanner | ✅ Done |
+| 23 | Cash & Expense Ledger (DR/CR Redesign) | ✅ Done |
 
 ---
 
@@ -408,6 +409,23 @@ Root cause: `route.js` files were cross-importing each other (e.g., `[id]/route.
 | 8 | Configured explicit format filtering (`CODE_128`, `CODE_39`, `EAN_13`, `EAN_8`, `QR_CODE`) to improve scanning speed and robustness | ✅ Done |
 | 9 | Prevented form submission on scanner `Enter` suffix commands by intercepting the keypress and triggering input blur validation instead | ✅ Done |
 | 10 | Created a `safeToISO` date formatting wrapper in `/api/consignments/search`, `/api/consignments/[id]`, `/api/consignments`, `/api/consignments/stats`, and `/api/sync-logs` API routes to safely parse dates regardless of whether they are Firestore Timestamps or strings | ✅ Done |
+
+---
+
+### ✅ PHASE 23 — Cash & Expense Ledger (DR/CR Redesign)
+
+**Goal**: Redesign the entire daily expense tracker into a real-time running cash ledger supporting credit inflows and debit outflows.
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Created `/api/expenses` and `/api/expenses/[id]` supporting `entryType` ('DR' / 'CR') properties | ✅ Done |
+| 2 | Added `/api/cash-register` and `/api/cash-register/[id]` to set and adjust opening balance inputs | ✅ Done |
+| 3 | Created `BalanceCard` component showing initial petty cash, credits, debits, and computed running cash balance | ✅ Done |
+| 4 | Added suggested opening cash carried forward from yesterday's computed closing balance | ✅ Done |
+| 5 | Created `AddTransactionModal` overlay form featuring Debit (Expense) / Credit (Cash Inflow) type toggles, quick select chips, and custom validations | ✅ Done |
+| 6 | Created chronological `TransactionTimeline` ledger displaying running balance after each entry | ✅ Done |
+| 7 | Refactored `ExpenseSummaryCards` to correctly display DR-filtered operational expenses and today's cash balance | ✅ Done |
+| 8 | Refactored main `ExpensesPage` page, cleaned up old inline files, updated navigation menus (sidebar & mobile), and validated Next.js production builds | ✅ Done |
 
 ---
 
