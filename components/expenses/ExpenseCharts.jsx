@@ -8,6 +8,7 @@ import {
   LineChart, Line,
   XAxis, YAxis, Tooltip, CartesianGrid,
   Tooltip as RechartsTooltip,
+  Label,
 } from 'recharts';
 import { formatCurrency } from '../../lib/utils';
 
@@ -33,11 +34,15 @@ export function MonthlyExpenseChart({ data }) {
   return (
     <div className="bg-white border border-fe-muted/20 rounded-2xl p-5 shadow-sm">
       <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">Monthly Expense Trend</h3>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false}>
+            <Label value="Month" offset={-10} position="insideBottom" style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </XAxis>
+          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} width={50}>
+            <Label value="Amount (₹)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </YAxis>
           <Tooltip content={<RsTooltip />} />
           <Bar dataKey="amount" fill={TEAL} radius={[6, 6, 0, 0]} maxBarSize={48} />
         </BarChart>
@@ -96,11 +101,15 @@ export function DailyExpenseChart({ data }) {
   return (
     <div className="bg-white border border-fe-muted/20 rounded-2xl p-5 shadow-sm">
       <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">Daily Expense Trend</h3>
-      <ResponsiveContainer width="100%" height={180}>
-        <LineChart data={data} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} width={48} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} interval="preserveStartEnd">
+            <Label value="Date" offset={-10} position="insideBottom" style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </XAxis>
+          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} width={55}>
+            <Label value="Amount (₹)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </YAxis>
           <Tooltip content={<RsTooltip />} />
           <Line type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} dot={{ r: 3, fill: TEAL }} activeDot={{ r: 5 }} />
         </LineChart>
@@ -125,15 +134,19 @@ export function CashBalanceChart({ cashRegister }) {
   return (
     <div className="bg-white border border-fe-muted/20 rounded-2xl p-5 shadow-sm">
       <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">Cash Balance History</h3>
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} width={44} />
+          <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} interval="preserveStartEnd">
+            <Label value="Date" offset={-10} position="insideBottom" style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </XAxis>
+          <YAxis tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} width={50}>
+            <Label value="Balance (₹)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+          </YAxis>
           <Tooltip content={<RsTooltip />} />
           <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={32}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.type === 'opening' ? '#3b82f6' : '#10b981'} />
+              <Cell key={i} fill={entry.type === 'opening' || entry.type === 'initial' ? '#3b82f6' : '#10b981'} />
             ))}
           </Bar>
         </BarChart>
