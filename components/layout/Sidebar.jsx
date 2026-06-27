@@ -14,7 +14,8 @@ import {
   Coins,
   Package,
   MessageSquare,
-  Users
+  Users,
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -42,6 +43,12 @@ export function Sidebar({ className = '' }) {
       label: 'Revenue',
       href: '/dashboard/revenue',
       icon: Coins,
+      roles: ['admin', 'super_admin'],
+    },
+    {
+      label: 'Expenses',
+      href: '/dashboard/expenses',
+      icon: IndianRupee,
       roles: ['admin', 'super_admin'],
     },
     {
