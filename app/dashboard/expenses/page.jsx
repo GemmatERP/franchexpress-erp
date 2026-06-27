@@ -129,7 +129,7 @@ export default function ExpensesPage() {
 
   const handleAddCash = async (data) => {
     try {
-      await addCashEntry(data);
+      await addCashEntry({ ...data, date: selectedDate });
       toast(`${data.type === 'initial' ? 'Initial cash' : 'Cash addition'} recorded`, 'success');
       await loadAll();
     } catch (err) {
