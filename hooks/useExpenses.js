@@ -222,11 +222,11 @@ export function useExpenses() {
       .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
     const debits = dayExpenses
-      .filter((e) => e.entryType === 'DR')
+      .filter((e) => e.entryType === 'DR' && e.paymentMode !== 'Bank')
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const credits = dayExpenses
-      .filter((e) => e.entryType === 'CR')
+      .filter((e) => e.entryType === 'CR' && e.paymentMode !== 'Bank')
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const balance = initial + added + credits - debits;
@@ -238,6 +238,33 @@ export function useExpenses() {
       credits,
       balance,
       hasInitial: dayCash.some((r) => r.type === 'initial' || r.type === 'opening')
+    };
+  }
+
+  // ── Calculate Bank Balances ────────────────────────────────────────────────
+  function calculateBankBalances(toDateStr, allExpenses) {
+    const expUpToDate = allExpenses.filter((e) => {
+      const d = e.dateString || e.date?.slice(0, 10);
+      return !toDateStr || d <= toDateStr;
+    });
+
+    const axisCR = expUpToDate
+      .filter((e) => e.entryType === 'CR' && e.paymentMode === 'Bank' && e.bankName === 'Axis Bank')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const axisDR = expUpToDate
+      .filter((e) => e.entryType === 'DR' && e.paymentMode === 'Bank' && e.bankName === 'Axis Bank')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const fedCR = expUpToDate
+      .filter((e) => e.entryType === 'CR' && e.paymentMode === 'Bank' && e.bankName === 'Federal Bank')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const fedDR = expUpToDate
+      .filter((e) => e.entryType === 'DR' && e.paymentMode === 'Bank' && e.bankName === 'Federal Bank')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    return {
+      axisBalance: axisCR - axisDR,
+      fedBalance: fedCR - fedDR,
     };
   }
 
@@ -255,5 +282,6 @@ export function useExpenses() {
     buildDailyData,
     buildMonthlyData,
     calculateDayBalance,
+    calculateBankBalances,
   };
 }

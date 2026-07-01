@@ -28,6 +28,18 @@ export function Sidebar({ className = '' }) {
   // Define nav links with required roles
   const navItems = [
     {
+      label: 'Delivery',
+      href: '/dashboard/delivery-agent',
+      icon: Truck,
+      roles: ['delivery'],
+    },
+    {
+      label: profile?.name ? `${profile.name} Dashboard` : 'Agent Dashboard',
+      href: '/dashboard/agent-dashboard',
+      icon: LayoutDashboard,
+      roles: ['delivery'],
+    },
+    {
       label: 'Dashboard',
       href: '/dashboard',
       icon: LayoutDashboard,
@@ -67,7 +79,7 @@ export function Sidebar({ className = '' }) {
       label: 'Delivery View',
       href: '/dashboard/delivery',
       icon: Truck,
-      roles: ['admin', 'super_admin', 'delivery'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Reports & Export',

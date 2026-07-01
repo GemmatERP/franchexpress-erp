@@ -82,6 +82,18 @@ export function MobileDrawer({ isOpen, onClose }) {
 
   const navItems = [
     {
+      label: 'Delivery',
+      href: '/dashboard/delivery-agent',
+      icon: Truck,
+      roles: ['delivery'],
+    },
+    {
+      label: profile?.name ? `${profile.name} Dashboard` : 'Agent Dashboard',
+      href: '/dashboard/agent-dashboard',
+      icon: LayoutDashboard,
+      roles: ['delivery'],
+    },
+    {
       label: 'Dashboard',
       href: '/dashboard',
       icon: LayoutDashboard,
@@ -121,7 +133,7 @@ export function MobileDrawer({ isOpen, onClose }) {
       label: 'Delivery View',
       href: '/dashboard/delivery',
       icon: Truck,
-      roles: ['admin', 'super_admin', 'delivery'],
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Reports & Export',
@@ -173,7 +185,7 @@ export function MobileDrawer({ isOpen, onClose }) {
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
             role="dialog"
             aria-modal="true"
-            className="relative bg-white w-[260px] h-full shadow-2xl flex flex-col z-10 border-r border-fe-muted/30"
+            className="relative bg-white w-[260px] h-[100dvh] overflow-hidden shadow-2xl flex flex-col z-10 border-r border-fe-muted/30"
           >
             <div className="h-20 flex items-center justify-center px-5 border-b border-fe-muted/20 relative">
               <Link href="/dashboard" onClick={onClose} className="flex items-center justify-center">

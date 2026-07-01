@@ -119,21 +119,26 @@ export function DailyExpenseChart({ data }) {
 }
 
 // ── Cash Balance Timeline ──────────────────────────────────────────────────────
-export function CashBalanceChart({ cashRegister }) {
-  const data = cashRegister
-    .filter((r) => r.amount > 0)
-    .map((r) => ({
-      label: new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-      amount: r.amount,
-      type: r.type,
-    }))
-    .slice(-30);
+export function CashBalanceChart({ cashRegister, dataOverride, title = "Cash Balance History" }) {
+  let data = [];
+  if (dataOverride) {
+    data = dataOverride;
+  } else {
+    data = cashRegister
+      .filter((r) => r.amount > 0)
+      .map((r) => ({
+        label: new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        amount: r.amount,
+        type: r.type,
+      }))
+      .slice(-30);
+  }
 
-  if (!data.length) return <EmptyChart message="No cash register data yet" />;
+  if (!data.length) return <EmptyChart message="No balance history data yet" />;
 
   return (
     <div className="bg-white border border-fe-muted/20 rounded-2xl p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">Cash Balance History</h3>
+      <h3 className="text-sm font-bold text-fe-dark font-heading mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -146,14 +151,14 @@ export function CashBalanceChart({ cashRegister }) {
           <Tooltip content={<RsTooltip />} />
           <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={32}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.type === 'opening' || entry.type === 'initial' ? '#3b82f6' : '#10b981'} />
+              <Cell key={i} fill={dataOverride ? '#0d9488' : (entry.type === 'opening' || entry.type === 'initial' ? '#3b82f6' : '#10b981')} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
       <div className="flex items-center gap-4 mt-3 text-[10px] font-sans text-fe-gray">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> Opening</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Closing</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: dataOverride ? '#0d9488' : '#3b82f6' }} /> {dataOverride ? 'Account Balance' : 'Opening'}</span>
+        {!dataOverride && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Closing</span>}
       </div>
     </div>
   );

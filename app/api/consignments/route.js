@@ -274,6 +274,38 @@ export async function POST(req) {
       }
     }
 
+    // If UPI is collected, automatically create a Credit (CR) entry in the bank/expense ledger for Axis Bank
+    let upiPaid = 0;
+    if (body.paymentMode === 'UPI') {
+      upiPaid = Number(body.amount) || 0;
+    } else if (body.paymentMode === 'CASH + UPI') {
+      upiPaid = Number(body.upiAmount) || 0;
+    }
+
+    if (upiPaid > 0) {
+      try {
+        const dateStr = body.date ? body.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+        const dateObj = body.date ? new Date(body.date) : new Date();
+        dateObj.setHours(12, 0, 0, 0);
+
+        await adminDb.collection('expenses').add({
+          date: admin.firestore.Timestamp.fromDate(dateObj),
+          dateString: dateStr,
+          particulars: `Voucher UPI - AWB ${body.awbNumber || ''}`,
+          category: 'Revenue / Cash Inflow',
+          amount: upiPaid,
+          entryType: 'CR',
+          paymentMode: 'Bank',
+          bankName: 'Axis Bank',
+          notes: `Auto-generated from consignment booking (SNO: ${docData.sno})`,
+          createdBy: decodedToken.uid,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (eError) {
+        console.error('Failed to auto-create bank ledger entry:', eError.message);
+      }
+    }
+
     // Invalidate dashboard stats cache so next load reflects new data
     invalidateStatsCache();
 

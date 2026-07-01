@@ -107,7 +107,7 @@ export function Modal({
             className={`relative bg-fe-bg w-full ${sizeClasses[size]} rounded-xl shadow-xl border border-fe-muted overflow-hidden flex flex-col z-10 ${className}`}
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-fe-muted bg-white flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-fe-muted bg-white flex justify-between items-center">
               <h3 id="modal-title" className="text-base font-bold text-fe-dark font-heading">
                 {title}
               </h3>
@@ -121,7 +121,7 @@ export function Modal({
             </div>
 
             {/* Content body */}
-            <div className="px-6 py-5 overflow-y-auto max-h-[75vh]">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto max-h-[75vh]">
               {children}
             </div>
           </motion.div>
