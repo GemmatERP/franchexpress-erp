@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ScanLine, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react';
+import { ScanLine, CheckCircle2, XCircle, Package, RefreshCw, Search, X } from 'lucide-react';
 import { BulkBarcodeScanner } from './BulkBarcodeScanner';
 import { AgentScannedList } from './AgentScannedList';
 import { useToast } from '../../hooks/useToast';
@@ -29,6 +29,7 @@ export function BulkScanPage({ authHeaders, queueItems, setQueueItems, onRefresh
   const [actionLoading, setActionLoading] = useState(null); // item id being actioned
   const [awbPopup,      setAwbPopup]      = useState({ open: false, awb: '', status: '' });
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, item: null });
+  const [searchQuery,   setSearchQuery]   = useState('');
 
   // ── Handle a new scan ────────────────────────────────────────────────────────
   const handleScan = useCallback(async (awbNumber) => {
@@ -256,14 +257,49 @@ export function BulkScanPage({ authHeaders, queueItems, setQueueItems, onRefresh
       {/* Divider */}
       <div className="h-px bg-fe-muted/20" />
 
+      {/* Search Filter Bar */}
+      <div className="px-4 py-3 bg-white border-b border-fe-muted/15 flex items-center gap-2">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            pattern="[0-9]*"
+            inputMode="numeric"
+            maxLength={4}
+            value={searchQuery}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d*$/.test(val)) {
+                setSearchQuery(val);
+              }
+            }}
+            placeholder="Search by last 4 digits..."
+            className="w-full text-xs font-sans border border-fe-muted/30 rounded-xl px-3 py-2 text-fe-dark focus:outline-none focus:ring-2 focus:ring-fe-teal/30 pl-8 transition-all"
+          />
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-fe-gray" />
+        </div>
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="p-2 hover:bg-fe-bg rounded-lg text-fe-gray hover:text-fe-dark transition-colors flex items-center justify-center shrink-0"
+            title="Clear search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {/* Scanned List */}
       <div className="flex-1 overflow-y-auto">
         <AgentScannedList
-          items={queueItems}
+          items={queueItems.filter(item => {
+            if (!searchQuery) return true;
+            return (item.awbNumber || '').endsWith(searchQuery);
+          })}
           onComplete={handleComplete}
           onDelete={(item) => setDeleteConfirm({ open: true, item })}
           onUndo={handleUndo}
           actionLoading={actionLoading}
+          isFiltered={!!searchQuery}
         />
       </div>
 

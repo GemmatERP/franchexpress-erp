@@ -87,11 +87,26 @@ export async function GET(req) {
       }
     });
 
-    // Sort in-process by addedAt descending (newest first)
+    const todayStr = new Date().toISOString().slice(0, 10);
     items.sort((a, b) => {
+      const aIsCarry = a.dayDate !== todayStr;
+      const bIsCarry = b.dayDate !== todayStr;
+
+      // Priority 1: Carry-forward at the top
+      if (aIsCarry && !bIsCarry) return -1;
+      if (!aIsCarry && bIsCarry) return 1;
+
+      if (aIsCarry && bIsCarry) {
+        // Oldest carry-forward first
+        const aTime = a.addedAt || a.dayDate || '';
+        const bTime = b.addedAt || b.dayDate || '';
+        return aTime.localeCompare(bTime);
+      }
+
+      // Priority 2: New consignments (oldest first - i.e. in order received/assigned)
       const aTime = a.addedAt || '';
       const bTime = b.addedAt || '';
-      return bTime.localeCompare(aTime);
+      return aTime.localeCompare(bTime);
     });
 
     return NextResponse.json({ items, date: dateParam || new Date().toISOString().slice(0, 10) });

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Trash2, Package, MapPin, Phone, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Trash2, Package, MapPin, Phone, Clock, ArrowRight, XCircle } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 
 /**
@@ -16,9 +16,23 @@ import { Spinner } from '../ui/Spinner';
  *   onDelete      — callback(item) — removes AWB from the list
  *   onUndo        — callback(item) — reverts AWB back to pending
  *   actionLoading — id string of item currently being acted on
+ *   isFiltered    — boolean indicating if the list is filtered by search query
  */
-export function AgentScannedList({ items, onComplete, onDelete, onUndo, actionLoading }) {
+export function AgentScannedList({ items, onComplete, onDelete, onUndo, actionLoading, isFiltered }) {
   if (items.length === 0) {
+    if (isFiltered) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center animate-fadeIn">
+          <div className="h-16 w-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-4">
+            <XCircle className="h-7 w-7 text-amber-500" />
+          </div>
+          <p className="text-sm font-bold text-fe-dark font-heading">No results found</p>
+          <p className="text-xs text-fe-gray mt-1 max-w-xs font-sans">
+            No consignments end with those digits. Try another search or clear the filter.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="h-16 w-16 rounded-2xl bg-fe-muted/20 flex items-center justify-center mb-4">
@@ -32,10 +46,32 @@ export function AgentScannedList({ items, onComplete, onDelete, onUndo, actionLo
     );
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const sortedItems = [...items].sort((a, b) => {
+    const aIsCarry = a.dayDate !== todayStr;
+    const bIsCarry = b.dayDate !== todayStr;
+
+    // Priority 1: Carry-forward at the top
+    if (aIsCarry && !bIsCarry) return -1;
+    if (!aIsCarry && bIsCarry) return 1;
+
+    if (aIsCarry && bIsCarry) {
+      // Oldest carry-forward first
+      const aTime = a.addedAt || a.dayDate || '';
+      const bTime = b.addedAt || b.dayDate || '';
+      return aTime.localeCompare(bTime);
+    }
+
+    // Priority 2: New consignments (oldest first - i.e., in order received/assigned)
+    const aTime = a.addedAt || '';
+    const bTime = b.addedAt || '';
+    return aTime.localeCompare(bTime);
+  });
+
   return (
     <div className="space-y-3 pt-2.5">
       <AnimatePresence initial={false}>
-        {items.map((item, index) => {
+        {sortedItems.map((item, index) => {
           const isCompleted = item.status === 'completed';
           const isLoading   = actionLoading === item.id;
           const isCarryFwd  = item.dayDate !== new Date().toISOString().slice(0, 10);
