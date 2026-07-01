@@ -31,13 +31,13 @@ export function Sidebar({ className = '' }) {
       label: 'Delivery',
       href: '/dashboard/delivery-agent',
       icon: Truck,
-      roles: ['admin', 'super_admin', 'delivery'],
+      roles: ['delivery'],
     },
     {
       label: profile?.name ? `${profile.name} Dashboard` : 'Agent Dashboard',
       href: '/dashboard/agent-dashboard',
       icon: LayoutDashboard,
-      roles: ['admin', 'super_admin', 'delivery'],
+      roles: ['delivery'],
     },
     {
       label: 'Dashboard',

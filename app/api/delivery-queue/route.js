@@ -19,19 +19,18 @@ async function authenticate(req) {
 // ── GET /api/delivery-queue?date=YYYY-MM-DD ───────────────────────────────────
 // Returns the authenticated agent's queue for the given date, PLUS all pending
 // items from any prior date (carry-forward logic).
+// Also supports ?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD for historical views.
 export async function GET(req) {
   try {
     const decoded = await authenticate(req);
     const agentUid = decoded.uid;
 
     const { searchParams } = new URL(req.url);
-    const dateParam = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const dateParam = searchParams.get('date');
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
 
-    // Fetch all pending items (carry-forward) + all items for today
-    // We query where agentUid matches, then filter client-side:
-    // - items with status 'pending' (regardless of dayDate) ← carry-forward
-    // - items with dayDate == dateParam (includes completed ones for today's view)
-    // Fetch all items for this agent — sort in-process (avoids composite index requirement)
+    // Fetch all items for this agent
     const snapshot = await adminDb
       .collection('deliveryQueue')
       .where('agentUid', '==', agentUid)
@@ -40,24 +39,51 @@ export async function GET(req) {
     const items = [];
     snapshot.docs.forEach((doc) => {
       const d = doc.data();
-      const isPending   = d.status === 'pending';
-      const isToday     = d.dayDate === dateParam;
-      // Include if: belongs to today OR is a pending carry-forward from any past day
-      if (isToday || isPending) {
-        items.push({
-          id:              doc.id,
-          agentUid:        d.agentUid,
-          awbNumber:       d.awbNumber        || '',
-          consignmentId:   d.consignmentId    || null,
-          particulars:     d.particulars      || '',
-          consigneeName:   d.consigneeName    || '',
-          consigneeCity:   d.consigneeCity    || '',
-          deliveryStatus:  d.deliveryStatus   || '',
-          status:          d.status           || 'pending',
-          dayDate:         d.dayDate          || '',
-          addedAt:         d.addedAt?.toDate?.()?.toISOString() ?? d.addedAt ?? null,
-          completedAt:     d.completedAt?.toDate?.()?.toISOString() ?? d.completedAt ?? null,
-        });
+      const compDate = d.completedAt?.toDate ? d.completedAt.toDate() : (d.completedAt ? new Date(d.completedAt) : null);
+      const compDateStr = compDate ? compDate.toISOString().slice(0, 10) : '';
+      const isPending = d.status === 'pending';
+
+      if (fromDate && toDate) {
+        // Range query mode
+        const isCompletedInRange = d.status === 'completed' && compDateStr >= fromDate && compDateStr <= toDate;
+        if (isCompletedInRange || isPending) {
+          items.push({
+            id:              doc.id,
+            agentUid:        d.agentUid,
+            awbNumber:       d.awbNumber        || '',
+            consignmentId:   d.consignmentId    || null,
+            particulars:     d.particulars      || '',
+            consigneeName:   d.consigneeName    || '',
+            consigneeCity:   d.consigneeCity    || '',
+            deliveryStatus:  d.deliveryStatus   || '',
+            status:          d.status           || 'pending',
+            dayDate:         d.dayDate          || '',
+            addedAt:         d.addedAt?.toDate?.()?.toISOString() ?? d.addedAt ?? null,
+            completedAt:     d.completedAt?.toDate?.()?.toISOString() ?? d.completedAt ?? null,
+          });
+        }
+      } else {
+        // Daily queue mode
+        const targetDate = dateParam || new Date().toISOString().slice(0, 10);
+        const isToday = d.dayDate === targetDate;
+        const isCompletedToday = d.status === 'completed' && compDateStr === targetDate;
+
+        if (isToday || isPending || isCompletedToday) {
+          items.push({
+            id:              doc.id,
+            agentUid:        d.agentUid,
+            awbNumber:       d.awbNumber        || '',
+            consignmentId:   d.consignmentId    || null,
+            particulars:     d.particulars      || '',
+            consigneeName:   d.consigneeName    || '',
+            consigneeCity:   d.consigneeCity    || '',
+            deliveryStatus:  d.deliveryStatus   || '',
+            status:          d.status           || 'pending',
+            dayDate:         d.dayDate          || '',
+            addedAt:         d.addedAt?.toDate?.()?.toISOString() ?? d.addedAt ?? null,
+            completedAt:     d.completedAt?.toDate?.()?.toISOString() ?? d.completedAt ?? null,
+          });
+        }
       }
     });
 
@@ -68,7 +94,7 @@ export async function GET(req) {
       return bTime.localeCompare(aTime);
     });
 
-    return NextResponse.json({ items, date: dateParam });
+    return NextResponse.json({ items, date: dateParam || new Date().toISOString().slice(0, 10) });
 
   } catch (err) {
     console.error('[API /delivery-queue GET] Error:', err.message);

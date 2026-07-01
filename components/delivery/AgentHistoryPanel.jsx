@@ -27,9 +27,8 @@ export function AgentHistoryPanel({ authHeaders }) {
     setError('');
     try {
       const headers = await authHeaders();
-      // We fetch the queue for each day in the range
-      // For efficiency, we fetch all items and filter client-side for the range
-      const res = await fetch(`/api/delivery-queue?date=${toDate}`, { headers });
+      // Fetch queue items for the date range
+      const res = await fetch(`/api/delivery-queue?fromDate=${fromDate}&toDate=${toDate}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch history');
       const data = await res.json();
       // Filter to completed items within the from-to range

@@ -37,7 +37,7 @@ export function middleware(request) {
   // Redirect logged-in users away from /login
   if (pathname === '/login' && token) {
     if (role === 'delivery') {
-      return NextResponse.redirect(new URL('/dashboard/delivery', request.url));
+      return NextResponse.redirect(new URL('/dashboard/delivery-agent', request.url));
     }
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
