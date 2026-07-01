@@ -17,14 +17,18 @@ export function middleware(request) {
     }
 
     // Role-based protection:
-    // Delivery role is ONLY allowed to access /dashboard/delivery
+    // Delivery role is ONLY allowed to access /dashboard/delivery-agent and /dashboard/agent-dashboard
     if (role === 'delivery') {
-      if (!pathname.startsWith('/dashboard/delivery')) {
-        return NextResponse.redirect(new URL('/dashboard/delivery', request.url));
+      const allowedAgentRoutes = pathname.startsWith('/dashboard/delivery-agent') || pathname.startsWith('/dashboard/agent-dashboard');
+      if (!allowedAgentRoutes) {
+        return NextResponse.redirect(new URL('/dashboard/delivery-agent', request.url));
       }
     } else {
-      // Admins and Super Admins can access /dashboard/delivery; Employees and others cannot
-      if (pathname.startsWith('/dashboard/delivery') && role !== 'admin' && role !== 'super_admin') {
+      // Admins and Super Admins can access all delivery pages; Employees and others cannot
+      const isDeliveryRoute = pathname.startsWith('/dashboard/delivery') || 
+                              pathname.startsWith('/dashboard/delivery-agent') || 
+                              pathname.startsWith('/dashboard/agent-dashboard');
+      if (isDeliveryRoute && role !== 'admin' && role !== 'super_admin') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }

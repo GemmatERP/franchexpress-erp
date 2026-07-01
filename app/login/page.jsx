@@ -41,7 +41,7 @@ export default function LoginPage() {
         const activeRole = match ? match[2] : 'employee';
         
         if (activeRole === 'delivery') {
-          router.replace('/dashboard/delivery');
+          router.replace('/dashboard/delivery-agent');
         } else {
           router.replace('/dashboard');
         }

@@ -33,9 +33,18 @@ function SummaryCard({ icon: Icon, label, value, sub, color = 'teal', trend }) {
   );
 }
 
-export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth }) {
+export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth, ledgerSource = 'All', axisBalance = 0, fedBalance = 0 }) {
+  // Filter expenses by ledgerSource
+  const sourceExpenses = expenses.filter((e) => {
+    if (ledgerSource === 'All') return true;
+    if (ledgerSource === 'Cash') return e.paymentMode !== 'Bank';
+    if (ledgerSource === 'Axis Bank') return e.paymentMode === 'Bank' && e.bankName === 'Axis Bank';
+    if (ledgerSource === 'Federal Bank') return e.paymentMode === 'Bank' && e.bankName === 'Federal Bank';
+    return true;
+  });
+
   // Only look at DR (debit/expense) entries for expense metrics
-  const currentMonthExpenses = expenses.filter((e) => {
+  const currentMonthExpenses = sourceExpenses.filter((e) => {
     const d = e.date ? e.date.slice(0, 7) : '';
     return d === selectedMonth;
   });
@@ -47,7 +56,7 @@ export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth }) {
   const [yr, mo] = selectedMonth.split('-').map(Number);
   const prevDate = new Date(yr, mo - 2, 1);
   const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-  const prevMonthExpenses = expenses.filter((e) => e.date?.slice(0, 7) === prevMonth && e.entryType !== 'CR');
+  const prevMonthExpenses = sourceExpenses.filter((e) => e.date?.slice(0, 7) === prevMonth && e.entryType !== 'CR');
   const totalPrevMonth = prevMonthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   const trend = totalPrevMonth > 0 ? ((totalThisMonth - totalPrevMonth) / totalPrevMonth) * 100 : undefined;
 
@@ -69,10 +78,27 @@ export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth }) {
 
   const initial = todayCash.filter((r) => r.type === 'initial' || r.type === 'opening').reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const added = todayCash.filter((r) => r.type === 'add').reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-  const DR = todayExpenses.filter((e) => e.entryType !== 'CR').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const CR = todayExpenses.filter((e) => e.entryType === 'CR').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const DR = todayExpenses.filter((e) => e.entryType !== 'CR' && e.paymentMode !== 'Bank').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const CR = todayExpenses.filter((e) => e.entryType === 'CR' && e.paymentMode !== 'Bank').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const runningToday = initial + added + CR - DR;
   const hasInitial = todayCash.some((r) => r.type === 'initial' || r.type === 'opening');
+
+  let balanceLabel = "Today's Cash Balance";
+  let balanceValue = hasInitial ? formatCurrency(runningToday) : '—';
+  let balanceSub = hasInitial ? `Petty cash: ${formatCurrency(initial)}` : 'Opening cash not set';
+  let balanceColor = 'blue';
+
+  if (ledgerSource === 'Axis Bank') {
+    balanceLabel = "Axis Bank Balance";
+    balanceValue = formatCurrency(axisBalance);
+    balanceSub = "Current active balance";
+    balanceColor = 'teal';
+  } else if (ledgerSource === 'Federal Bank') {
+    balanceLabel = "Federal Bank Balance";
+    balanceValue = formatCurrency(fedBalance);
+    balanceSub = "Current active balance";
+    balanceColor = 'violet';
+  }
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -100,10 +126,10 @@ export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth }) {
       />
       <SummaryCard
         icon={Wallet}
-        label="Today's Cash Balance"
-        value={hasInitial ? formatCurrency(runningToday) : '—'}
-        sub={hasInitial ? `Petty cash: ${formatCurrency(initial)}` : 'Opening cash not set'}
-        color="blue"
+        label={balanceLabel}
+        value={balanceValue}
+        sub={balanceSub}
+        color={balanceColor}
       />
     </div>
   );

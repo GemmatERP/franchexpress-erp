@@ -20,6 +20,8 @@ const CR_SUGGESTIONS = [
 
 export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) {
   const [entryType, setEntryType] = useState('DR'); // 'DR' or 'CR'
+  const [paymentMode, setPaymentMode] = useState('Cash'); // 'Cash' or 'Bank'
+  const [bankName, setBankName] = useState('Axis Bank'); // 'Axis Bank' or 'Federal Bank'
   const [particulars, setParticulars] = useState('');
   const [category, setCategory] = useState('Miscellaneous');
   const [amount, setAmount] = useState('');
@@ -32,6 +34,8 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
       document.body.style.overflow = 'hidden';
       // Reset state on open
       setEntryType('DR');
+      setPaymentMode('Cash');
+      setBankName('Axis Bank');
       setParticulars('');
       setCategory('Miscellaneous');
       setAmount('');
@@ -57,6 +61,8 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
         category: entryType === 'DR' ? category : 'Revenue / Cash Inflow',
         amount: Number(amount),
         notes: notes.trim(),
+        paymentMode,
+        bankName: paymentMode === 'Bank' ? bankName : null,
       });
       onClose();
     } catch (err) {}
@@ -74,7 +80,7 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
         <div className="flex items-center justify-between px-6 py-4 border-b border-fe-muted/10 shrink-0">
           <div>
             <h3 className="text-base font-bold text-fe-dark font-heading">Add Transaction</h3>
-            <p className="text-[11px] text-fe-gray font-sans mt-0.5">Record a cash debit or credit</p>
+            <p className="text-[11px] text-fe-gray font-sans mt-0.5">Record a cash or bank transaction</p>
           </div>
           <button
             onClick={onClose}
@@ -116,6 +122,47 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
               </button>
             </div>
           </div>
+
+          {/* Payment Source / Destination Toggle */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-fe-gray font-sans uppercase tracking-wider block font-semibold">
+              {entryType === 'DR' ? 'Source' : 'Destination'}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentMode('Cash')}
+                className={`py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                  paymentMode === 'Cash'
+                    ? 'bg-fe-teal/10 border-fe-teal/20 text-fe-teal ring-2 ring-fe-teal/10'
+                    : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
+                }`}
+              >
+                {entryType === 'DR' ? 'From Cash' : 'To Cash'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMode('Bank')}
+                className={`py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                  paymentMode === 'Bank'
+                    ? 'bg-fe-teal/10 border-fe-teal/20 text-fe-teal ring-2 ring-fe-teal/10'
+                    : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
+                }`}
+              >
+                {entryType === 'DR' ? 'From Bank' : 'To Bank'}
+              </button>
+            </div>
+          </div>
+
+          {/* Bank Selection Dropdown (Only if Bank is selected) */}
+          {paymentMode === 'Bank' && (
+            <Select
+              label="Choose Bank"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              options={['Axis Bank', 'Federal Bank']}
+            />
+          )}
 
           {/* Quick-add chips */}
           <div className="space-y-1.5">

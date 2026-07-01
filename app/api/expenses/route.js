@@ -37,6 +37,8 @@ export async function GET(req) {
       return {
         id: doc.id, ...d,
         entryType: d.entryType || 'DR',
+        paymentMode: d.paymentMode || 'Cash',
+        bankName: d.bankName || null,
         date: d.date?.toDate ? d.date.toDate().toISOString() : d.date,
         createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : d.createdAt,
       };
@@ -51,7 +53,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const decoded = await authenticate(req);
-    const { date, particulars, category, amount, notes, entryType } = await req.json();
+    const { date, particulars, category, amount, notes, entryType, paymentMode, bankName } = await req.json();
     if (!date || !particulars || amount === undefined)
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 
@@ -63,6 +65,8 @@ export async function POST(req) {
       category: category || 'Miscellaneous',
       amount: Number(amount),
       entryType: entryType || 'DR', // 'DR' or 'CR'
+      paymentMode: paymentMode || 'Cash',
+      bankName: paymentMode === 'Bank' ? (bankName || 'Axis Bank') : null,
       notes: notes?.trim() || '',
       createdBy: decoded.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),

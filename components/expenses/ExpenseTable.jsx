@@ -88,7 +88,18 @@ export function ExpenseTable({ expenses, onDelete, canDelete = true }) {
                       style={{ background: getCategoryColor(expense.category) }}
                     />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-fe-dark truncate">{expense.particulars}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-fe-dark truncate">{expense.particulars}</p>
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider shrink-0 font-sans ${
+                          expense.paymentMode === 'Bank'
+                            ? expense.bankName === 'Axis Bank'
+                              ? 'bg-fe-teal/10 text-fe-teal border border-fe-teal/20'
+                              : 'bg-violet-50 text-violet-600 border border-violet-100'
+                            : 'bg-gray-100 text-fe-gray border border-fe-muted/20'
+                        }`}>
+                          {expense.paymentMode === 'Bank' ? expense.bankName : 'Cash'}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <CategoryBadge category={expense.category} />
                         {expense.notes && (
@@ -101,7 +112,7 @@ export function ExpenseTable({ expenses, onDelete, canDelete = true }) {
                     <span className="text-sm font-bold text-fe-dark">{formatCurrency(expense.amount)}</span>
                     {canDelete && (
                       <button
-                        onClick={() => onDelete(expense.id)}
+                        onClick={() => onDelete(expense.id, expense.particulars)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-fe-gray hover:text-red-500 hover:bg-red-50 transition-all"
                         title="Delete"
                       >

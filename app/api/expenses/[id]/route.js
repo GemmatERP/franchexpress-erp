@@ -12,12 +12,14 @@ async function authenticate(req) {
 export async function PUT(req, { params }) {
   try {
     await authenticate(req);
-    const { particulars, category, amount, notes } = await req.json();
+    const { particulars, category, amount, notes, paymentMode, bankName } = await req.json();
     await adminDb.collection('expenses').doc(params.id).update({
       particulars: particulars?.trim(),
       category,
       amount: Number(amount),
       notes: notes?.trim() || '',
+      paymentMode: paymentMode || 'Cash',
+      bankName: paymentMode === 'Bank' ? (bankName || 'Axis Bank') : null,
     });
     return NextResponse.json({ success: true });
   } catch (err) {

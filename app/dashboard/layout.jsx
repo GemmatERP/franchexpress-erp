@@ -39,7 +39,11 @@ export default function DashboardLayout({ children }) {
     } else if (pathname === '/dashboard/revenue') {
       setPageTitle('Revenue Analytics');
     } else if (pathname === '/dashboard/delivery') {
-      setPageTitle('Delivery Agent Hub');
+      setPageTitle('Delivery View');
+    } else if (pathname === '/dashboard/delivery-agent') {
+      setPageTitle('Delivery');
+    } else if (pathname === '/dashboard/agent-dashboard') {
+      setPageTitle('Agent Dashboard');
     } else if (pathname === '/dashboard/reports') {
       setPageTitle('Reports & Business Intelligence');
     } else if (pathname === '/dashboard/sync') {
