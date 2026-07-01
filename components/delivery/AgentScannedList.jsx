@@ -33,7 +33,7 @@ export function AgentScannedList({ items, onComplete, onDelete, onUndo, actionLo
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-2.5">
       <AnimatePresence initial={false}>
         {items.map((item, index) => {
           const isCompleted = item.status === 'completed';
