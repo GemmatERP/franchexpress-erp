@@ -15,7 +15,8 @@ import {
   Package,
   MessageSquare,
   Users,
-  IndianRupee
+  IndianRupee,
+  Boxes
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -52,22 +53,28 @@ export function Sidebar({ className = '' }) {
       roles: ['admin', 'super_admin', 'employee'],
     },
     {
-      label: 'Revenue',
-      href: '/dashboard/revenue',
-      icon: Coins,
-      roles: ['admin', 'super_admin'],
+      label: 'Search Consignments',
+      href: '/dashboard/search',
+      icon: Search,
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Expenses',
       href: '/dashboard/expenses',
       icon: IndianRupee,
-      roles: ['admin', 'super_admin'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
-      label: 'Search Consignments',
-      href: '/dashboard/search',
-      icon: Search,
+      label: 'Office Utilities',
+      href: '/dashboard/office-utilities',
+      icon: Boxes,
       roles: ['admin', 'super_admin', 'employee'],
+    },
+    {
+      label: 'Revenue',
+      href: '/dashboard/revenue',
+      icon: Coins,
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'Consignments View',
@@ -79,7 +86,7 @@ export function Sidebar({ className = '' }) {
       label: 'Delivery View',
       href: '/dashboard/delivery',
       icon: Truck,
-      roles: ['admin', 'super_admin'],
+      roles: ['admin', 'super_admin', 'employee'],
     },
     {
       label: 'Reports & Export',

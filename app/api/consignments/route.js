@@ -306,6 +306,40 @@ export async function POST(req) {
       }
     }
 
+    // Auto-decrement POD count when an AWB number is present
+    if (body.awbNumber && String(body.awbNumber).trim()) {
+      try {
+        const podRef = adminDb.collection('officeUtilities').doc('pod');
+        await adminDb.runTransaction(async (tx) => {
+          const snap = await tx.get(podRef);
+          if (snap.exists) {
+            const current = Number(snap.data().count) || 0;
+            const next = Math.max(0, current - 1);
+            tx.update(podRef, { count: next, updatedAt: new Date().toISOString() });
+          }
+        });
+      } catch (podErr) {
+        console.error('Failed to auto-decrement POD count:', podErr.message);
+      }
+    }
+
+    // Auto-decrement Covers count when cover charges are entered
+    if (Number(body.coverCharges) > 0) {
+      try {
+        const coversRef = adminDb.collection('officeUtilities').doc('covers');
+        await adminDb.runTransaction(async (tx) => {
+          const snap = await tx.get(coversRef);
+          if (snap.exists) {
+            const current = Number(snap.data().count) || 0;
+            const next = Math.max(0, current - 1);
+            tx.update(coversRef, { count: next, updatedAt: new Date().toISOString() });
+          }
+        });
+      } catch (coversErr) {
+        console.error('Failed to auto-decrement Covers count:', coversErr.message);
+      }
+    }
+
     // Invalidate dashboard stats cache so next load reflects new data
     invalidateStatsCache();
 

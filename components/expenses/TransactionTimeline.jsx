@@ -5,7 +5,7 @@ import { Trash2, ArrowDownLeft, ArrowUpRight, Plus, Wallet, FileText } from 'luc
 import { formatCurrency } from '../../lib/utils';
 import { getCategoryColor } from '../../hooks/useExpenses';
 
-export function TransactionTimeline({ date, expenses, cashRegister, onDeleteExpense, onDeleteCash, canDelete = true, ledgerSource = 'All' }) {
+export function TransactionTimeline({ date, expenses, cashRegister, onDeleteExpense, onDeleteCash, canDelete = true, ledgerSource = 'All', role }) {
   // Filter for chosen date
   const dayCash = cashRegister.filter((r) => r.dateString === date || r.date?.slice(0, 10) === date);
   const dayExpenses = expenses.filter((e) => e.dateString === date || e.date?.slice(0, 10) === date);
@@ -191,12 +191,12 @@ export function TransactionTimeline({ date, expenses, cashRegister, onDeleteExpe
                       {/* Payment Mode Badge */}
                       <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider shrink-0 font-sans ${
                         item.paymentMode === 'Bank'
-                          ? item.bankName === 'Axis Bank'
-                            ? 'bg-fe-teal/15 text-fe-teal border border-fe-teal/20'
-                            : 'bg-violet-100 text-violet-700 border border-violet-200'
+                          ? (role === 'employee' || item.bankName !== 'Axis Bank')
+                            ? 'bg-violet-100 text-violet-700 border border-violet-200'
+                            : 'bg-fe-teal/15 text-fe-teal border border-fe-teal/20'
                           : 'bg-gray-100 text-fe-gray border border-fe-muted/20'
                       }`}>
-                        {item.paymentMode === 'Bank' ? item.bankName : 'Cash'}
+                        {item.paymentMode === 'Bank' ? (role === 'employee' ? 'Bank' : item.bankName) : 'Cash'}
                       </span>
                       {isDR && item.category && (
                         <span

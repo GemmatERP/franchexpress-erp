@@ -53,11 +53,59 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const decoded = await authenticate(req);
-    const { date, particulars, category, amount, notes, entryType, paymentMode, bankName } = await req.json();
+    const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+    const role = userDoc.exists ? (userDoc.data().role || 'delivery') : 'delivery';
+    if (role !== 'admin' && role !== 'super_admin' && role !== 'employee') {
+      return NextResponse.json({ error: 'Unauthorized: Admin or Employee role required' }, { status: 403 });
+    }
+
+    const { date, particulars, category, amount, notes, entryType, paymentMode, bankName, agentUid, isDeliveryPayment } = await req.json();
     if (!date || !particulars || amount === undefined)
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 
     const dateObj = new Date(date); dateObj.setHours(12, 0, 0, 0);
+
+    if (isDeliveryPayment === true && agentUid) {
+      // Find all completed unpaid deliveryQueue items for this agent
+      const queueQuery = adminDb.collection('deliveryQueue')
+        .where('agentUid', '==', agentUid)
+        .where('status', '==', 'completed');
+      
+      const queueSnap = await queueQuery.get();
+      const unpaidDocs = queueSnap.docs.filter(doc => doc.data().isPaid !== true);
+
+      // Perform all-or-nothing batch commit
+      const batch = adminDb.batch();
+      const expenseRef = adminDb.collection('expenses').doc();
+      
+      batch.set(expenseRef, {
+        date: admin.firestore.Timestamp.fromDate(dateObj),
+        dateString: date.slice(0, 10),
+        particulars: particulars.trim(),
+        category: category || 'Miscellaneous',
+        amount: Number(amount),
+        entryType: entryType || 'DR',
+        paymentMode: paymentMode || 'Cash',
+        bankName: paymentMode === 'Bank' ? (bankName || 'Axis Bank') : null,
+        notes: notes?.trim() || '',
+        createdBy: decoded.uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        agentUid,
+        isDeliveryPayment: true
+      });
+
+      unpaidDocs.forEach(doc => {
+        batch.update(doc.ref, {
+          isPaid: true,
+          expenseId: expenseRef.id,
+          paidAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      });
+
+      await batch.commit();
+      return NextResponse.json({ id: expenseRef.id, success: true }, { status: 201 });
+    }
+
     const docRef = await adminDb.collection('expenses').add({
       date: admin.firestore.Timestamp.fromDate(dateObj),
       dateString: date.slice(0, 10),

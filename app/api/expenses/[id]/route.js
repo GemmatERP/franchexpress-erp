@@ -31,7 +31,33 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await authenticate(req);
-    await adminDb.collection('expenses').doc(params.id).delete();
+    
+    const expenseRef = adminDb.collection('expenses').doc(params.id);
+    const expenseDoc = await expenseRef.get();
+    
+    if (expenseDoc.exists) {
+      const data = expenseDoc.data();
+      if (data.isDeliveryPayment === true) {
+        // Find all deliveryQueue documents associated with this expense
+        const queueSnap = await adminDb.collection('deliveryQueue')
+          .where('expenseId', '==', params.id)
+          .get();
+        
+        if (!queueSnap.empty) {
+          const batch = adminDb.batch();
+          queueSnap.docs.forEach(doc => {
+            batch.update(doc.ref, {
+              isPaid: false,
+              expenseId: null,
+              paidAt: null
+            });
+          });
+          await batch.commit();
+        }
+      }
+    }
+    
+    await expenseRef.delete();
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

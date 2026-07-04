@@ -9,6 +9,7 @@ import { useConsignments } from '../../hooks/useConsignments';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { useConsignmentEdit } from '../../lib/ConsignmentEditContext';
+import { useOfficeUtilities } from '../../hooks/useOfficeUtilities';
 import { ShipmentSection } from './ShipmentSection';
 import { PaymentSection } from './PaymentSection';
 import { ConsignorSection } from './ConsignorSection';
@@ -74,6 +75,14 @@ export function ConsignmentForm() {
   const [sno, setSno] = useState('');
   const [formData, setFormData] = useState(INITIAL_FORM());
   const [errors, setErrors] = useState({});
+
+  // ── Office Utilities low-stock counts ───────────────────────────────────────
+  const { items: utilityItems, fetchItems: fetchUtilityItems } = useOfficeUtilities();
+  useEffect(() => { fetchUtilityItems(); }, [fetchUtilityItems]);
+  const podItem = utilityItems.find((i) => i.id === 'pod');
+  const coversItem = utilityItems.find((i) => i.id === 'covers');
+  const podCount = podItem ? podItem.count : null;
+  const coversCount = coversItem ? coversItem.count : null;
 
   // ── Dirty tracking ──────────────────────────────────────────────────────────
   const [isDirty, setIsDirty] = useState(false);
@@ -368,6 +377,7 @@ export function ConsignmentForm() {
           onAwbBlur={handleAwbBlur}
           awbDuplicateChecking={awbDuplicateChecking}
           sectionNumber={1}
+          podCount={podCount}
         />
         <ConsignorSection
           formData={formData}
@@ -386,6 +396,7 @@ export function ConsignmentForm() {
           onChange={handleInputChange}
           errors={errors}
           sectionNumber={4}
+          coversCount={coversCount}
         />
       </form>
 

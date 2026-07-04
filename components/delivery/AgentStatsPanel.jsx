@@ -16,7 +16,7 @@ import { AgentHistoryPanel } from './AgentHistoryPanel';
  *   todayStats   — { delivered, pickedUp, notDelivered, toBePaid }
  *   authHeaders  — async function returning auth headers
  */
-export function AgentStatsPanel({ profile, todayStats, authHeaders }) {
+export function AgentStatsPanel({ profile, todayStats, authHeaders, agentUid, pendingPrevious = 0, onPay }) {
   const stats = [
     {
       label:    'Delivered Today',
@@ -102,8 +102,27 @@ export function AgentStatsPanel({ profile, todayStats, authHeaders }) {
               transition={{ delay: 0.05 + i * 0.07 }}
               className={`${stat.bgColor} ${stat.border} border rounded-xl p-3 flex flex-col gap-2`}
             >
-              <div className={`h-7 w-7 rounded-lg bg-white/80 flex items-center justify-center ${stat.color}`}>
-                <Icon className="h-3.5 w-3.5" />
+              <div className="flex justify-between items-start w-full">
+                <div className={`h-7 w-7 rounded-lg bg-white/80 flex items-center justify-center ${stat.color}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                {stat.label === 'To Be Paid Today' && onPay && (todayStats.toBePaid > 0 || pendingPrevious > 0) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPay({
+                        ...profile,
+                        toBePaidToday: todayStats.toBePaid,
+                        pendingPrevious: pendingPrevious
+                      });
+                    }}
+                    className="px-3.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                    id="dashboard-pay-btn"
+                  >
+                    Pay
+                  </button>
+                )}
               </div>
               <div>
                 <p className={`text-lg font-bold font-heading ${stat.color}`}>
@@ -126,7 +145,7 @@ export function AgentStatsPanel({ profile, todayStats, authHeaders }) {
       </div>
 
       {/* History Panel */}
-      <AgentHistoryPanel authHeaders={authHeaders} />
+      <AgentHistoryPanel authHeaders={authHeaders} agentUid={agentUid} />
     </aside>
   );
 }
