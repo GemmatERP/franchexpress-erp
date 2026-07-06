@@ -29,7 +29,7 @@ import { formatDateForInput } from '../../lib/utils';
  *
  * - Chargeable Amount: read-only auto-calc = amount + coverCharges
  */
-export function PaymentSection({ formData, onChange, errors, sectionNumber = 4 }) {
+export function PaymentSection({ formData, onChange, errors, sectionNumber = 4, coversCount = null }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleSection = () => setIsOpen(!isOpen);
@@ -244,15 +244,31 @@ export function PaymentSection({ formData, onChange, errors, sectionNumber = 4 }
                 )}
 
                 {/* Cover Charges */}
-                <Input
-                  label="Cover Charges (₹)"
-                  name="coverCharges"
-                  type="number"
-                  placeholder="0"
-                  value={formData.coverCharges}
-                  onChange={onChange}
-                  error={errors.coverCharges}
-                />
+                <div className="flex flex-col gap-1 w-full">
+                  <label className="text-xs font-semibold text-fe-dark font-sans flex items-center gap-2">
+                    Cover Charges (₹)
+                    {coversCount !== null && coversCount <= 50 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
+                        Covers: {coversCount}
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    name="coverCharges"
+                    placeholder="0"
+                    value={formData.coverCharges}
+                    onChange={onChange}
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm font-sans transition-all bg-white text-fe-dark placeholder-fe-gray focus:outline-none focus:ring-2 focus:ring-fe-teal focus:ring-offset-1 ${
+                      errors.coverCharges ? 'border-red-300 ring-2 ring-red-200' : 'border-fe-muted focus:border-fe-teal'
+                    }`}
+                  />
+                  {errors.coverCharges && (
+                    <span className="text-[11px] font-medium text-red-600 mt-0.5 animate-pulse" role="alert">
+                      {errors.coverCharges}
+                    </span>
+                  )}
+                </div>
 
                 {/* COD Product Value — only shown when mode is COD */}
                 {isCOD && (

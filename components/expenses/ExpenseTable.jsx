@@ -18,7 +18,7 @@ function CategoryBadge({ category }) {
   );
 }
 
-export function ExpenseTable({ expenses, onDelete, canDelete = true }) {
+export function ExpenseTable({ expenses, onDelete, canDelete = true, role }) {
   const [sortField, setSortField] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -92,12 +92,12 @@ export function ExpenseTable({ expenses, onDelete, canDelete = true }) {
                         <p className="text-sm font-medium text-fe-dark truncate">{expense.particulars}</p>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider shrink-0 font-sans ${
                           expense.paymentMode === 'Bank'
-                            ? expense.bankName === 'Axis Bank'
-                              ? 'bg-fe-teal/10 text-fe-teal border border-fe-teal/20'
-                              : 'bg-violet-50 text-violet-600 border border-violet-100'
+                            ? (role === 'employee' || expense.bankName !== 'Axis Bank')
+                              ? 'bg-violet-50 text-violet-600 border border-violet-100'
+                              : 'bg-fe-teal/10 text-fe-teal border border-fe-teal/20'
                             : 'bg-gray-100 text-fe-gray border border-fe-muted/20'
                         }`}>
-                          {expense.paymentMode === 'Bank' ? expense.bankName : 'Cash'}
+                          {expense.paymentMode === 'Bank' ? (role === 'employee' ? 'Bank' : expense.bankName) : 'Cash'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">

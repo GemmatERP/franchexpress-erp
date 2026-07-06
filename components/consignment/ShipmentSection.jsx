@@ -12,7 +12,7 @@ const BarcodeScannerModal = dynamic(
   { ssr: false }
 );
 
-export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, awbDuplicateChecking, sectionNumber = 1 }) {
+export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, awbDuplicateChecking, sectionNumber = 1, podCount = null }) {
   const [isOpen, setIsOpen] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
 
@@ -113,8 +113,13 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
 
               {/* AWB Number — numeric only */}
               <div className="flex flex-col gap-1.5 w-full">
-                <label className="text-xs font-semibold text-fe-dark font-sans">
+                <label className="text-xs font-semibold text-fe-dark font-sans flex items-center gap-2">
                   AWB Number <span className="text-red-500">*</span>
+                  {podCount !== null && podCount <= 50 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
+                      POD: {podCount}
+                    </span>
+                  )}
                 </label>
                 <div className="relative">
                   <input

@@ -6,7 +6,7 @@ import { formatCurrency } from '../../lib/utils';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
-export function BalanceCard({ daySummary, suggestedOpening, onAddCash, loading, axisBalance = 0, fedBalance = 0, ledgerSource = 'All', cashBalance = 0 }) {
+export function BalanceCard({ daySummary, suggestedOpening, onAddCash, loading, axisBalance = 0, fedBalance = 0, ledgerSource = 'All', cashBalance = 0, role }) {
   const [showInput, setShowInput] = useState(false);
   const [inputType, setInputType] = useState('initial'); // 'initial' or 'add'
   const [amount, setAmount] = useState('');
@@ -60,7 +60,7 @@ export function BalanceCard({ daySummary, suggestedOpening, onAddCash, loading, 
           </div>
 
           {/* Breakdown & Bank Stats */}
-          <div className={`${isBankMode ? 'lg:col-span-8' : 'lg:col-span-6'} grid grid-cols-2 sm:grid-cols-5 gap-4 border-y lg:border-y-0 lg:border-x border-fe-muted/10 py-4 lg:py-0 lg:px-6`}>
+          <div className={`${isBankMode ? 'lg:col-span-8' : 'lg:col-span-6'} grid grid-cols-2 ${role === 'employee' ? 'sm:grid-cols-3' : 'sm:grid-cols-5'} gap-4 border-y lg:border-y-0 lg:border-x border-fe-muted/10 py-4 lg:py-0 lg:px-6`}>
             <div>
               <span className="text-[10px] text-fe-gray font-sans block uppercase">
                 {isBankMode ? 'Opening Balance' : 'Initial Cash'}
@@ -90,22 +90,26 @@ export function BalanceCard({ daySummary, suggestedOpening, onAddCash, loading, 
                 -{formatCurrency(daySummary.debits)}
               </span>
             </div>
-            <div className="border-t sm:border-t-0 sm:border-l border-fe-muted/10 pt-2 sm:pt-0 sm:pl-3">
-              <span className="text-[10px] text-fe-gray font-sans block uppercase">
-                {isBankMode ? 'Running Cash' : 'Axis Bank'}
-              </span>
-              <span className="text-sm font-bold text-fe-teal font-heading block mt-0.5">
-                {formatCurrency(isBankMode ? cashBalance : axisBalance)}
-              </span>
-            </div>
-            <div className="border-t sm:border-t-0 sm:border-l border-fe-muted/10 pt-2 sm:pt-0 sm:pl-3">
-              <span className="text-[10px] text-fe-gray font-sans block uppercase">
-                {ledgerSource === 'Federal Bank' ? 'Axis Bank' : 'Federal Bank'}
-              </span>
-              <span className={`text-sm font-bold font-heading block mt-0.5 ${ledgerSource === 'Federal Bank' ? 'text-fe-teal' : 'text-violet-600'}`}>
-                {formatCurrency(ledgerSource === 'Federal Bank' ? axisBalance : fedBalance)}
-              </span>
-            </div>
+            {role !== 'employee' && (
+              <>
+                <div className="border-t sm:border-t-0 sm:border-l border-fe-muted/10 pt-2 sm:pt-0 sm:pl-3">
+                  <span className="text-[10px] text-fe-gray font-sans block uppercase">
+                    {isBankMode ? 'Running Cash' : 'Axis Bank'}
+                  </span>
+                  <span className="text-sm font-bold text-fe-teal font-heading block mt-0.5">
+                    {formatCurrency(isBankMode ? cashBalance : axisBalance)}
+                  </span>
+                </div>
+                <div className="border-t sm:border-t-0 sm:border-l border-fe-muted/10 pt-2 sm:pt-0 sm:pl-3">
+                  <span className="text-[10px] text-fe-gray font-sans block uppercase">
+                    {ledgerSource === 'Federal Bank' ? 'Axis Bank' : 'Federal Bank'}
+                  </span>
+                  <span className={`text-sm font-bold font-heading block mt-0.5 ${ledgerSource === 'Federal Bank' ? 'text-fe-teal' : 'text-violet-600'}`}>
+                    {formatCurrency(ledgerSource === 'Federal Bank' ? axisBalance : fedBalance)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Quick Actions */}

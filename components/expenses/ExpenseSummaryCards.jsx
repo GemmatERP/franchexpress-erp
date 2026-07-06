@@ -33,7 +33,7 @@ function SummaryCard({ icon: Icon, label, value, sub, color = 'teal', trend }) {
   );
 }
 
-export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth, ledgerSource = 'All', axisBalance = 0, fedBalance = 0 }) {
+export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth, ledgerSource = 'All', axisBalance = 0, fedBalance = 0, role }) {
   // Filter expenses by ledgerSource
   const sourceExpenses = expenses.filter((e) => {
     if (ledgerSource === 'All') return true;
@@ -88,7 +88,13 @@ export function ExpenseSummaryCards({ expenses, cashRegister, selectedMonth, led
   let balanceSub = hasInitial ? `Petty cash: ${formatCurrency(initial)}` : 'Opening cash not set';
   let balanceColor = 'blue';
 
-  if (ledgerSource === 'Axis Bank') {
+  if (role === 'employee') {
+    // Force petty cash labels only, even if ledgerSource got manipulated
+    balanceLabel = "Today's Cash Balance";
+    balanceValue = hasInitial ? formatCurrency(runningToday) : '—';
+    balanceSub = hasInitial ? `Petty cash: ${formatCurrency(initial)}` : 'Opening cash not set';
+    balanceColor = 'blue';
+  } else if (ledgerSource === 'Axis Bank') {
     balanceLabel = "Axis Bank Balance";
     balanceValue = formatCurrency(axisBalance);
     balanceSub = "Current active balance";

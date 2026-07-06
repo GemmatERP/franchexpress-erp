@@ -11,8 +11,9 @@ import { Calendar, CheckCircle2, Package, MapPin, TrendingUp, IndianRupee, Loade
  *
  * Props:
  *   authHeaders  — async function that returns { Authorization, Content-Type }
+ *   agentUid     — optional agent UID
  */
-export function AgentHistoryPanel({ authHeaders }) {
+export function AgentHistoryPanel({ authHeaders, agentUid }) {
   const today  = new Date().toISOString().slice(0, 10);
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
 
@@ -28,7 +29,11 @@ export function AgentHistoryPanel({ authHeaders }) {
     try {
       const headers = await authHeaders();
       // Fetch queue items for the date range
-      const res = await fetch(`/api/delivery-queue?fromDate=${fromDate}&toDate=${toDate}`, { headers });
+      let url = `/api/delivery-queue?fromDate=${fromDate}&toDate=${toDate}`;
+      if (agentUid) {
+        url += `&agentUid=${agentUid}`;
+      }
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error('Failed to fetch history');
       const data = await res.json();
       // Filter to completed items within the from-to range
@@ -51,7 +56,7 @@ export function AgentHistoryPanel({ authHeaders }) {
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, fromDate, toDate]);
+  }, [authHeaders, fromDate, toDate, agentUid]);
 
   useEffect(() => {
     fetchHistory();

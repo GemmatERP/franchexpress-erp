@@ -23,14 +23,14 @@ export function middleware(request) {
       if (!allowedAgentRoutes) {
         return NextResponse.redirect(new URL('/dashboard/delivery-agent', request.url));
       }
-    } else {
-      // Admins and Super Admins can access all delivery pages; Employees and others cannot
-      const isDeliveryRoute = pathname.startsWith('/dashboard/delivery') || 
-                              pathname.startsWith('/dashboard/delivery-agent') || 
-                              pathname.startsWith('/dashboard/agent-dashboard');
-      if (isDeliveryRoute && role !== 'admin' && role !== 'super_admin') {
+    } else if (role === 'employee') {
+      // Employee can access /dashboard/delivery but NOT delivery-agent or agent-dashboard
+      const isAgentRoute = pathname.startsWith('/dashboard/delivery-agent') || pathname.startsWith('/dashboard/agent-dashboard');
+      if (isAgentRoute) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
+    } else {
+      // Admins and Super Admins can access all delivery pages
     }
   }
 

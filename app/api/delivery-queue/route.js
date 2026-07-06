@@ -23,12 +23,21 @@ async function authenticate(req) {
 export async function GET(req) {
   try {
     const decoded = await authenticate(req);
-    const agentUid = decoded.uid;
+    const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+    const userRole = userDoc.exists ? (userDoc.data().role || 'delivery') : 'delivery';
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date');
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
+
+    let agentUid = decoded.uid;
+    if (userRole === 'admin' || userRole === 'super_admin' || userRole === 'employee') {
+      const paramAgentUid = searchParams.get('agentUid');
+      if (paramAgentUid) {
+        agentUid = paramAgentUid;
+      }
+    }
 
     // Fetch all items for this agent
     const snapshot = await adminDb
@@ -39,6 +48,7 @@ export async function GET(req) {
     const items = [];
     snapshot.docs.forEach((doc) => {
       const d = doc.data();
+
       const compDate = d.completedAt?.toDate ? d.completedAt.toDate() : (d.completedAt ? new Date(d.completedAt) : null);
       const compDateStr = compDate ? compDate.toISOString().slice(0, 10) : '';
       const isPending = d.status === 'pending';
@@ -58,6 +68,7 @@ export async function GET(req) {
             deliveryStatus:  d.deliveryStatus   || '',
             status:          d.status           || 'pending',
             dayDate:         d.dayDate          || '',
+            isPaid:          d.isPaid           || false,
             addedAt:         d.addedAt?.toDate?.()?.toISOString() ?? d.addedAt ?? null,
             completedAt:     d.completedAt?.toDate?.()?.toISOString() ?? d.completedAt ?? null,
           });
@@ -80,6 +91,7 @@ export async function GET(req) {
             deliveryStatus:  d.deliveryStatus   || '',
             status:          d.status           || 'pending',
             dayDate:         d.dayDate          || '',
+            isPaid:          d.isPaid           || false,
             addedAt:         d.addedAt?.toDate?.()?.toISOString() ?? d.addedAt ?? null,
             completedAt:     d.completedAt?.toDate?.()?.toISOString() ?? d.completedAt ?? null,
           });

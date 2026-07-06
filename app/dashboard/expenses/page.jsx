@@ -61,9 +61,9 @@ export default function ExpensesPage() {
     calculateBankBalances,
   } = useExpenses();
 
-  // Redirect if not admin
+  // Redirect if not admin or employee
   useEffect(() => {
-    if (!authLoading && role && role !== 'admin' && role !== 'super_admin') {
+    if (!authLoading && role && role !== 'admin' && role !== 'super_admin' && role !== 'employee') {
       router.replace('/dashboard');
     }
   }, [role, authLoading, router]);
@@ -320,6 +320,7 @@ export default function ExpensesPage() {
         ledgerSource={ledgerSource}
         axisBalance={axisBalance}
         fedBalance={fedBalance}
+        role={role}
       />
 
       {/* Tab & Filter Header */}
@@ -344,21 +345,23 @@ export default function ExpensesPage() {
         </div>
 
         {/* Ledger Source Filter (Cash, Axis Bank, Federal Bank, All) */}
-        <div className="flex items-center gap-2 bg-fe-bg/60 border border-fe-muted/20 p-1 rounded-xl">
-          {['All', 'Cash', 'Axis Bank', 'Federal Bank'].map((source) => {
-            const isActive = ledgerSource === source;
-            return (
-              <button
-                key={source}
-                onClick={() => setLedgerSource(source)}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all ${isActive ? 'bg-white text-fe-teal shadow-sm border border-fe-muted/20' : 'text-fe-gray hover:text-fe-dark'
-                  }`}
-              >
-                {source}
-              </button>
-            );
-          })}
-        </div>
+        {role !== 'employee' && (
+          <div className="flex items-center gap-2 bg-fe-bg/60 border border-fe-muted/20 p-1 rounded-xl">
+            {['All', 'Cash', 'Axis Bank', 'Federal Bank'].map((source) => {
+              const isActive = ledgerSource === source;
+              return (
+                <button
+                  key={source}
+                  onClick={() => setLedgerSource(source)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all ${isActive ? 'bg-white text-fe-teal shadow-sm border border-fe-muted/20' : 'text-fe-gray hover:text-fe-dark'
+                    }`}
+                >
+                  {source}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
         {/* ── TODAY tab ────────────────────────────────────────────────────────── */}
@@ -405,6 +408,7 @@ export default function ExpensesPage() {
               fedBalance={fedBalance}
               ledgerSource={ledgerSource}
               cashBalance={daySummary.balance}
+              role={role}
             />
 
             {/* Daily transaction timeline */}
@@ -416,6 +420,7 @@ export default function ExpensesPage() {
               onDeleteCash={triggerDeleteCash}
               canDelete={true}
               ledgerSource={ledgerSource}
+              role={role}
             />
           </motion.div>
         )}
@@ -508,6 +513,7 @@ export default function ExpensesPage() {
               expenses={filteredExpenses.filter((e) => e.entryType !== 'CR')}
               onDelete={triggerDeleteExpense}
               canDelete={true}
+              role={role}
             />
           </motion.div>
         )}

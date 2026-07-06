@@ -18,7 +18,18 @@ const CR_SUGGESTIONS = [
   'AWB cash booking', 'Consignment charge collection', 'Opening float adjustment'
 ];
 
-export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) {
+export function AddTransactionModal({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  date, 
+  loading,
+  initialAmount,
+  initialParticulars,
+  initialCategory,
+  agentUid,
+  isDeliveryPayment
+}) {
   const [entryType, setEntryType] = useState('DR'); // 'DR' or 'CR'
   const [paymentMode, setPaymentMode] = useState('Cash'); // 'Cash' or 'Bank'
   const [bankName, setBankName] = useState('Axis Bank'); // 'Axis Bank' or 'Federal Bank'
@@ -36,9 +47,9 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
       setEntryType('DR');
       setPaymentMode('Cash');
       setBankName('Axis Bank');
-      setParticulars('');
-      setCategory('Miscellaneous');
-      setAmount('');
+      setParticulars(initialParticulars || '');
+      setCategory(initialCategory || 'Miscellaneous');
+      setAmount(initialAmount !== undefined && initialAmount !== null ? String(initialAmount) : '');
       setNotes('');
     } else {
       document.body.style.overflow = 'unset';
@@ -46,7 +57,7 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, initialAmount, initialParticulars, initialCategory]);
 
   if (!isOpen) return null;
 
@@ -63,6 +74,8 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
         notes: notes.trim(),
         paymentMode,
         bankName: paymentMode === 'Bank' ? bankName : null,
+        agentUid,
+        isDeliveryPayment,
       });
       onClose();
     } catch (err) {}
@@ -93,35 +106,37 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
         {/* Scrollable Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* DR / CR Toggle Buttons */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] text-fe-gray font-sans uppercase tracking-wider block">Transaction Type</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setEntryType('DR')}
-                className={`py-3 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
-                  entryType === 'DR'
-                    ? 'bg-rose-50 border-rose-200 text-rose-800 ring-2 ring-rose-500/20'
-                    : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
-                }`}
-              >
-                <ArrowDownLeft className={`h-4 w-4 ${entryType === 'DR' ? 'text-rose-600' : 'text-fe-gray'}`} />
-                Debit (Expense)
-              </button>
-              <button
-                type="button"
-                onClick={() => setEntryType('CR')}
-                className={`py-3 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
-                  entryType === 'CR'
-                    ? 'bg-green-50 border-green-200 text-green-800 ring-2 ring-green-500/20'
-                    : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
-                }`}
-              >
-                <ArrowUpRight className={`h-4 w-4 ${entryType === 'CR' ? 'text-green-600' : 'text-fe-gray'}`} />
-                Credit (Cash Inflow)
-              </button>
+          {!isDeliveryPayment && (
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-fe-gray font-sans uppercase tracking-wider block">Transaction Type</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEntryType('DR')}
+                  className={`py-3 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                    entryType === 'DR'
+                      ? 'bg-rose-50 border-rose-200 text-rose-800 ring-2 ring-rose-500/20'
+                      : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
+                  }`}
+                >
+                  <ArrowDownLeft className={`h-4 w-4 ${entryType === 'DR' ? 'text-rose-600' : 'text-fe-gray'}`} />
+                  Debit (Expense)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryType('CR')}
+                  className={`py-3 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                    entryType === 'CR'
+                      ? 'bg-green-50 border-green-200 text-green-800 ring-2 ring-green-500/20'
+                      : 'bg-white border-fe-muted/30 text-fe-gray hover:border-fe-muted'
+                  }`}
+                >
+                  <ArrowUpRight className={`h-4 w-4 ${entryType === 'CR' ? 'text-green-600' : 'text-fe-gray'}`} />
+                  Credit (Cash Inflow)
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Payment Source / Destination Toggle */}
           <div className="space-y-1.5">
@@ -165,21 +180,23 @@ export function AddTransactionModal({ isOpen, onClose, onSave, date, loading }) 
           )}
 
           {/* Quick-add chips */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] text-fe-gray font-sans block uppercase">Quick Select Particulars</span>
-            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-fe-bg/40 rounded-lg">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setParticulars(s)}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white border border-fe-muted/20 text-fe-gray hover:border-fe-teal hover:text-fe-teal transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
+          {!isDeliveryPayment && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] text-fe-gray font-sans block uppercase">Quick Select Particulars</span>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-fe-bg/40 rounded-lg">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setParticulars(s)}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white border border-fe-muted/20 text-fe-gray hover:border-fe-teal hover:text-fe-teal transition-colors"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Particulars */}
           <Input
