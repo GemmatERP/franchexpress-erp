@@ -19,7 +19,7 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
   const toggleSection = () => setIsOpen(!isOpen);
 
   const courierOptions = [
-    'Franch Express', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC',
+    'Franch Express', 'India Post', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC',
     'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'
   ];
   const voucherOptions = ['Normal', 'COD', 'To Pay', 'Safety Plus'];

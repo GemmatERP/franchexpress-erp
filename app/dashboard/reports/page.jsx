@@ -27,7 +27,7 @@ const DEFAULT_FILTERS = () => ({
   paymentMode: 'All',
 });
 
-const COURIER_OPTIONS  = ['All', 'Franch Express', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
+const COURIER_OPTIONS  = ['All', 'Franch Express', 'India Post', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
 const STATUS_OPTIONS   = ['All', 'Processing', 'Booked', 'Transit', 'Reached Destination', 'Out of Delivery', 'Returned', 'Holding at HUB', 'Delivered'];
 const PAYMENT_OPTIONS  = ['All', 'CASH', 'UPI', 'CREDIT', 'To Pay', 'COD'];
 

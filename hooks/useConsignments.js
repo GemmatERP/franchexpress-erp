@@ -12,7 +12,7 @@ function seedMockConsignments() {
   const list = [];
   const cities       = ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Trichy', 'Vellore', 'Tirunelveli'];
   const statusOpts   = ['Delivered', 'Out of Delivery', 'Transit', 'Returned', 'Holding at HUB'];
-  const courierOpts  = ['SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
+  const courierOpts  = ['India Post', 'SmartR', 'Blue Dart', 'DTDC', 'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'];
   const paymentModes = ['CASH', 'UPI', 'CREDIT', 'To Pay', 'Debit'];
   const today = new Date();
 
