@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Package, AlertCircle, Scan } from 'lucide-react';
+import { ChevronDown, Package, AlertCircle, Scan, Plus } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { useCourierPartners } from '../../hooks/useCourierPartners';
+import { ManageCourierPartnersModal } from './ManageCourierPartnersModal';
 import dynamic from 'next/dynamic';
 
 const BarcodeScannerModal = dynamic(
@@ -15,13 +17,12 @@ const BarcodeScannerModal = dynamic(
 export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, awbDuplicateChecking, sectionNumber = 1, podCount = null }) {
   const [isOpen, setIsOpen] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [partnerModalOpen, setPartnerModalOpen] = useState(false);
+
+  const { partners, partnerNames, addPartner, deletePartner } = useCourierPartners();
 
   const toggleSection = () => setIsOpen(!isOpen);
 
-  const courierOptions = [
-    'Franch Express', 'India Post', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC',
-    'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'
-  ];
   const voucherOptions = ['Normal', 'COD', 'To Pay', 'Safety Plus'];
 
   // Prevent Enter key from submitting the form, trigger blur (duplicate check) instead
@@ -175,14 +176,41 @@ export function ShipmentSection({ formData, onChange, errors, sno, onAwbBlur, aw
               </div>
 
               {/* Courier Partner */}
-              <Select
-                label="Courier Partner"
-                name="courierPartner"
-                value={formData.courierPartner}
-                onChange={onChange}
-                options={courierOptions}
-                error={errors.courierPartner}
-                required
+              <div className="flex items-end gap-2">
+                <div className="flex-1 min-w-0">
+                  <Select
+                    label="Courier Partner"
+                    name="courierPartner"
+                    value={formData.courierPartner}
+                    onChange={onChange}
+                    options={
+                      formData.courierPartner && !partnerNames.includes(formData.courierPartner)
+                        ? [formData.courierPartner, ...partnerNames]
+                        : partnerNames
+                    }
+                    error={errors.courierPartner}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPartnerModalOpen(true)}
+                  title="Add or delete courier partner"
+                  aria-label="Add or delete courier partner"
+                  className="h-[42px] w-[42px] shrink-0 flex items-center justify-center rounded-lg border border-fe-teal bg-fe-teal/10 text-fe-teal hover:bg-fe-teal hover:text-white transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
+              <ManageCourierPartnersModal
+                isOpen={partnerModalOpen}
+                onClose={() => setPartnerModalOpen(false)}
+                partners={partners}
+                onAddPartner={addPartner}
+                onDeletePartner={deletePartner}
+                onSelectPartner={(name) => onChange({ target: { name: 'courierPartner', value: name } })}
+                currentValue={formData.courierPartner}
               />
 
               {/* Mode Toggle (Air / Surface) */}

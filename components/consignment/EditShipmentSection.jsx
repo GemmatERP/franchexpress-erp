@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Package } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { useCourierPartners } from '../../hooks/useCourierPartners';
 
 /**
  * EditShipmentSection
@@ -15,11 +16,11 @@ import { Select } from '../ui/Select';
  */
 export function EditShipmentSection({ formData, onChange, errors }) {
   const [isOpen, setIsOpen] = useState(true);
+  const { partnerNames } = useCourierPartners();
 
-  const courierOptions = [
-    'Franch Express', 'India Post', 'ST Courier', 'SmartR', 'Blue Dart', 'DTDC',
-    'DHL', 'FedEx', 'Aramex', 'UPS', 'Delhivery'
-  ];
+  const courierOptions = formData.courierPartner && !partnerNames.includes(formData.courierPartner)
+    ? [formData.courierPartner, ...partnerNames]
+    : partnerNames;
   const voucherOptions = ['Normal', 'COD', 'To Pay', 'Safety Plus'];
 
   return (

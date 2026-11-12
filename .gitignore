@@ -1,5 +1,6 @@
 # Dependency directories
 node_modules/
+node-env/
 
 # Next.js build output
 .next/
@@ -32,4 +33,7 @@ pnpm-debug.log*
 
 # Test results
 test-results/
+
+# Local DB backups (never commit to public repo)
+scratch/backups/
 

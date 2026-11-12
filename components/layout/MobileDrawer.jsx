@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Users,
   IndianRupee,
-  Boxes
+  Boxes,
+  FileEdit
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
@@ -147,6 +148,12 @@ export function MobileDrawer({ isOpen, onClose }) {
       href: '/dashboard/reports',
       icon: FileBarChart,
       roles: ['admin', 'super_admin', 'employee'],
+    },
+    {
+      label: 'Master Edit',
+      href: '/dashboard/master-edit',
+      icon: FileEdit,
+      roles: ['admin', 'super_admin'],
     },
     {
       label: 'WhatsApp Logs',

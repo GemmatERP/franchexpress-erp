@@ -6,6 +6,7 @@ import { Search, RotateCcw, Filter, ChevronDown } from 'lucide-react';
 import { useConsignments } from '../../../hooks/useConsignments';
 import { useConsignmentEdit } from '../../../lib/ConsignmentEditContext';
 import { useToast } from '../../../hooks/useToast';
+import { useCourierPartners } from '../../../hooks/useCourierPartners';
 import { ReportsSummary } from '../../../components/reports/ReportsSummary';
 import { ReportsTable } from '../../../components/reports/ReportsTable';
 import { ExportButtons } from '../../../components/reports/ExportButtons';
@@ -36,6 +37,7 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { setEditConsignment } = useConsignmentEdit();
   const { fetchConsignments, loadMoreConsignments, deleteConsignment, loading, hasMore, getHasMore } = useConsignments();
+  const { partnerNames } = useCourierPartners();
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS());
   const [consignments, setConsignments] = useState([]);
@@ -124,11 +126,14 @@ export default function ReportsPage() {
     <div className="pb-16">
       {/* Filters Form */}
       <div className="bg-white border border-fe-muted/30 p-6 rounded-xl shadow-sm">
-        <div className="flex items-center gap-2 border-b border-fe-muted/15 pb-3 mb-4">
-          <Filter className="h-4 w-4 text-fe-teal" />
-          <h3 className="text-xs font-bold text-fe-dark uppercase tracking-wider font-sans">
-            Search Parameters
-          </h3>
+        <div className="flex items-center justify-between gap-2 border-b border-fe-muted/15 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-fe-teal" />
+            <h3 className="text-xs font-bold text-fe-dark uppercase tracking-wider font-sans">
+              Search Parameters
+            </h3>
+          </div>
+          <ExportButtons fromDate={filters.fromDate} toDate={filters.toDate} label="Export" />
         </div>
 
         <form
@@ -138,7 +143,7 @@ export default function ReportsPage() {
           <Input label="From Date" name="fromDate" type="date" value={filters.fromDate} onChange={handleFilterChange} />
           <Input label="To Date"   name="toDate"   type="date" value={filters.toDate}   onChange={handleFilterChange} />
 
-          <Select label="Courier Partner" name="courierPartner" value={filters.courierPartner} onChange={handleFilterChange} options={COURIER_OPTIONS} />
+          <Select label="Courier Partner" name="courierPartner" value={filters.courierPartner} onChange={handleFilterChange} options={['All', ...partnerNames]} />
           <Select label="Status"          name="deliveryStatus" value={filters.deliveryStatus} onChange={handleFilterChange} options={STATUS_OPTIONS} />
           <Select label="Payment Mode"    name="paymentMode"    value={filters.paymentMode}    onChange={handleFilterChange} options={PAYMENT_OPTIONS} />
 
@@ -185,7 +190,7 @@ export default function ReportsPage() {
                   Load All for Export
                 </Button>
               )}
-              <ExportButtons consignments={consignments} filename="FE-Report" />
+              <ExportButtons fromDate={filters.fromDate} toDate={filters.toDate} label="Export" />
             </div>
           </div>
 

@@ -93,9 +93,15 @@ export async function PUT(req, { params }) {
         payload.deliveredDate = admin.firestore.Timestamp.now();
       }
     } else if (role === 'employee' || role === 'admin' || role === 'super_admin') {
+      const isMasterEdit = Boolean(body.masterEdit);
+      if (isMasterEdit && role !== 'admin' && role !== 'super_admin') {
+        return NextResponse.json({ error: 'Forbidden: Only Admins can perform Master Edit' }, { status: 403 });
+      }
+
       // Admins and Employees have full editing access
       payload = { ...body };
-      
+      delete payload.masterEdit;
+
       // Remove metadata parameters to prevent override
       delete payload.id;
       delete payload.sno;
@@ -103,10 +109,33 @@ export async function PUT(req, { params }) {
       delete payload.createdBy;
       delete payload.createdByName;
 
-      // Cast dates to Timestamps
-      if (body.date) payload.date = admin.firestore.Timestamp.fromDate(new Date(body.date));
-      if (body.paymentDate) payload.paymentDate = admin.firestore.Timestamp.fromDate(new Date(body.paymentDate));
-      if (body.deliveredDate) payload.deliveredDate = admin.firestore.Timestamp.fromDate(new Date(body.deliveredDate));
+      // Keep uppercase search index fields in sync when names/city/state are edited
+      if (payload.consigneeName !== undefined) payload._consigneeNameUpper = String(payload.consigneeName || '').toUpperCase();
+      if (payload.consignorName !== undefined) payload._consignorNameUpper = String(payload.consignorName || '').toUpperCase();
+      if (payload.consigneeCity !== undefined) payload._consigneeCityUpper = String(payload.consigneeCity || '').toUpperCase();
+      if (payload.consigneeState !== undefined) payload._consigneeStateUpper = String(payload.consigneeState || '').toUpperCase();
+
+      // Cast dates to Timestamps (or null if cleared)
+      const castDateField = (fieldName) => {
+        if (!(fieldName in body)) return;
+        if (body[fieldName]) {
+          const parsed = new Date(body[fieldName]);
+          if (!isNaN(parsed.getTime())) {
+            payload[fieldName] = admin.firestore.Timestamp.fromDate(parsed);
+          }
+        } else {
+          payload[fieldName] = null;
+        }
+      };
+
+      castDateField('date');
+      castDateField('paymentDate');
+      castDateField('deliveredDate');
+
+      if (isMasterEdit) {
+        payload.updatedAt = new Date().toISOString();
+        payload.lastMasterEditedBy = decodedToken.email || decodedToken.uid;
+      }
     } else {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }

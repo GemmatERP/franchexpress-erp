@@ -24,9 +24,12 @@ export function middleware(request) {
         return NextResponse.redirect(new URL('/dashboard/delivery-agent', request.url));
       }
     } else if (role === 'employee') {
-      // Employee can access /dashboard/delivery but NOT delivery-agent or agent-dashboard
-      const isAgentRoute = pathname.startsWith('/dashboard/delivery-agent') || pathname.startsWith('/dashboard/agent-dashboard');
-      if (isAgentRoute) {
+      // Employee can access /dashboard/delivery but NOT delivery-agent, agent-dashboard, or master-edit
+      const isRestrictedRoute =
+        pathname.startsWith('/dashboard/delivery-agent') ||
+        pathname.startsWith('/dashboard/agent-dashboard') ||
+        pathname.startsWith('/dashboard/master-edit');
+      if (isRestrictedRoute) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     } else {
